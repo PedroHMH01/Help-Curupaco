@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    :root {
+      --primary-purple: #6f42c1;
+      --hover-purple: #593196;
+      --light-purple: #f3ebff;
+      --border-purple: #d1b8f5;
+      --bg-color: #ffffff;
+      --text-color: #212529;
+    }
+
+    body {
+      width: 380px;
+      margin: 0;
+      padding: 12px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+    }
+
+    body.embedded {
+      width: auto;
+      min-width: 0;
+      padding: 10px;
+    }
+
+    h2 {
+      margin: 0 0 12px 0;
+      color: var(--primary-purple);
+      font-size: 18px;
+      text-align: center;
+      border-bottom: 2px solid var(--primary-purple);
+      padding-bottom: 6px;
+    }
+
+    .step {
+      display: none;
+    }
+
+    .step.active {
+      display: block;
+    }
+
+    .accordion {
+      border: 1px solid var(--border-purple);
+      border-radius: 6px;
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+
+    .accordion-header {
+      background-color: var(--light-purple);
+      color: var(--primary-purple);
+      font-weight: bold;
+      padding: 10px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .accordion-content {
+      display: grid;
+      grid-template-rows: 1fr;
+      padding: 0 10px;
+      background-color: #fff;
+      transition: grid-template-rows 220ms ease;
+    }
+
+    .accordion-inner {
+      min-height: 0;
+      overflow: hidden;
+      padding: 10px 0;
+      opacity: 1;
+      transition: opacity 180ms ease;
+    }
+
+    .accordion-content.collapsed {
+      grid-template-rows: 0fr;
+    }
+
+    .accordion-content.collapsed .accordion-inner {
+      opacity: 0;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .accordion-content,
+      .accordion-inner {
+        transition-duration: 0.01ms;
+      }
+    }
+
+    .radio-group, .checkbox-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .field-group {
+      margin-bottom: 10px;
+    }
+
+    .field-group label {
+      font-weight: bold;
+      font-size: 12px;
+      color: var(--primary-purple);
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    input[type="text"]:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary-purple);
+    }
+
+    .inline-inputs {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+      margin-bottom: 8px;
+    }
+
+    .inline-inputs input {
+      flex: 1;
+    }
+
+    .btn-nav-group {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 15px;
+      margin-bottom: 15px;
+    }
+
+    button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 4px;
+      background-color: var(--primary-purple);
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    button:hover {
+      background-color: var(--hover-purple);
+    }
+
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    .summary-section {
+      border-top: 2px dashed var(--border-purple);
+      padding-top: 10px;
+    }
+
+    textarea#output-text {
+      height: 180px;
+      font-family: monospace;
+      background-color: #fcfaff;
+      color: #333;
+      resize: vertical;
+    }
+
+    .btn-copy {
+      background-color: #28a745;
+      width: 100%;
+      margin-top: 6px;
+    }
+
+    .btn-copy:hover {
+      background-color: #218838;
+    }
+
+    .btn-reset {
+      background-color: #dc3545;
+      width: 100%;
+      margin-top: 4px;
+    }
+
+    .btn-reset:hover {
+      background-color: #c82333;
+    }
+
+    .dynamic-section {
+      border-left: 3px solid var(--primary-purple);
+      padding-left: 8px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2> Help Curupaco</h2>
+
+  <!-- PASSO 1: Seleção de Equipamentos -->
+  <div id="step-1" class="step active">
+    <!-- Catracas -->
+    <div class="accordion">
+      <div class="accordion-header" data-target="catraca-content">
+        <span>Catracas</span>
+      </div>
+      <div id="catraca-content" class="accordion-content">
+        <div class="accordion-inner">
+          <div id="equipment-catraca" class="radio-group"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Leitor Facial -->
+    <div class="accordion">
+      <div class="accordion-header" data-target="facial-content">
+        <span>Leitor Facial</span>
+      </div>
+      <div id="facial-content" class="accordion-content">
+        <div class="accordion-inner">
+          <div id="equipment-facial" class="radio-group"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Leitor Biométrico -->
+    <div class="accordion">
+      <div class="accordion-header" data-target="bio-content">
+        <span>Leitor Biométrico</span>
+      </div>
+      <div id="bio-content" class="accordion-content">
+        <div class="accordion-inner">
+          <div id="equipment-bio" class="radio-group"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Impressora -->
+    <div class="accordion">
+      <div class="accordion-header" data-target="impressora-content">
+        <span>Impressora</span>
+      </div>
+      <div id="impressora-content" class="accordion-content">
+        <div class="accordion-inner">
+          <div id="equipment-impressora" class="radio-group"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PASSO 2: Procedimentos e Detalhes -->
+  <div id="step-2" class="step">
+    
+    <!-- Problema -->
+    <div class="field-group">
+      <label>Problema relatado:</label>
+      <input type="text" id="input-problema" placeholder="Descreva o problema curto...">
+    </div>
+
+    <!-- Procedimentos Padrão -->
+    <div class="field-group">
+      <label>Procedimentos Padrão:</label>
+      <div id="standard-procedures" class="checkbox-group"></div>
+    </div>
+
+    <!-- Procedimentos Dinâmicos -->
+    <div id="dynamic-procedures"></div>
+
+    <!-- Informações Importantes -->
+    <div class="field-group">
+      <label>Informações importantes:</label>
+      <input type="text" id="input-info" placeholder="Observações adicionais...">
+    </div>
+
+    <!-- AnyDesk -->
+    <div class="field-group">
+      <label>AnyDesk / Acesso Remoto:</label>
+      <input type="text" id="input-anydesk" placeholder="Código AnyDesk...">
+    </div>
+
+  </div>
+
+  <!-- Botões de Navegação -->
+  <div class="btn-nav-group">
+    <button id="btn-prev" disabled>Anterior</button>
+    <button id="btn-next">Próximo</button>
+  </div>
+
+  <!-- Bloco de Texto Final -->
+  <div class="summary-section">
+    <label for="output-text">Texto do repasse (editável):</label>
+    <textarea id="output-text" aria-label="Texto do repasse, editável"></textarea>
+    <button id="btn-copy" class="btn-copy">Copiar Repasse</button>
+    <button id="btn-reset" class="btn-reset">Limpar Dados</button>
+  </div>
+
+  <script src="config-defaults.js"></script>
+  <script src="poptup.js"></script>
+</body>
+</html>

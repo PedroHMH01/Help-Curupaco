@@ -1,0 +1,59 @@
+{
+  "manifest_version": 3,
+  "name": "Help Curupaco",
+  "version": "2.5",
+  "description": "Suporte a Equipamentos - Gerador de Repasse com memória por URL",
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "action": {
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "options_ui": {
+    "page": "settings.html",
+    "open_in_tab": true
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [
+    "storage",
+    "clipboardWrite"
+  ],
+  "host_permissions": [
+    "https://sistemanextfit.myfreshworks.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://sistemanextfit.myfreshworks.com/*"
+      ],
+      "js": [
+        "freshworks-content.js"
+      ],
+      "css": [
+        "freshworks-content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "popup.html",
+        "poptup.js",
+        "config-defaults.js",
+        "icon.png"
+      ],
+      "matches": [
+        "https://sistemanextfit.myfreshworks.com/*"
+      ]
+    }
+  ]
+}

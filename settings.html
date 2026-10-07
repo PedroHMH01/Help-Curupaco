@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Configurações - Help Curupaco</title>
+  <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <img id="app-icon" src="icon.png" alt="" class="hero-icon">
+      <div>
+        <p class="eyebrow">HELP CURUPACO</p>
+        <h1>Extensão configurada com sucesso!</h1>
+        <p>Personalize o ícone, os equipamentos e os procedimentos usados no seu repasse.</p>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>Ícone no Freshworks</h2>
+      <p>Escolha uma imagem para o botão redondo do Help Curupaco no CRM. A imagem também aparece aqui como prévia.</p>
+      <div class="icon-controls">
+        <img id="icon-preview" src="icon.png" alt="Prévia do ícone">
+        <label class="button secondary" for="icon-file">Escolher imagem</label>
+        <input id="icon-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml,image/x-icon,.ico">
+        <button id="remove-icon" class="button secondary" type="button">Usar ícone padrão</button>
+        <span class="hint">PNG, JPG, WEBP, GIF, SVG ou ICO; máximo de 1 MB.</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Equipamentos e procedimentos</h2>
+      <p>Selecione uma categoria para editar os equipamentos e os procedimentos associados a cada modelo.</p>
+
+      <label class="field-label" for="category-select">Categoria</label>
+      <select id="category-select"></select>
+
+      <div id="equipment-editor">
+        <div class="editor-columns">
+          <section class="editor-panel">
+            <h3>Equipamentos / modelos</h3>
+            <div id="equipment-list" class="editable-list"></div>
+            <form id="add-equipment-form" class="add-form">
+              <label class="visually-hidden" for="new-equipment">Novo equipamento ou modelo</label>
+              <input id="new-equipment" type="text" maxlength="80" placeholder="Novo equipamento ou modelo">
+              <button class="button" type="submit">Adicionar</button>
+            </form>
+          </section>
+
+          <section class="editor-panel">
+            <h3>Procedimentos do modelo</h3>
+            <label class="field-label" for="equipment-select">Editar procedimentos para</label>
+            <select id="equipment-select"></select>
+            <div id="procedure-list" class="editable-list"></div>
+            <form id="add-procedure-form" class="add-form">
+              <label class="visually-hidden" for="new-procedure">Novo procedimento</label>
+              <input id="new-procedure" type="text" maxlength="100" placeholder="Novo procedimento">
+              <button class="button" type="submit">Adicionar</button>
+            </form>
+          </section>
+        </div>
+      </div>
+
+      <section id="standard-editor" class="editor-panel" hidden>
+        <h3>Procedimentos padrão</h3>
+        <div id="standard-list" class="editable-list"></div>
+        <form id="add-standard-form" class="add-form">
+          <label class="visually-hidden" for="new-standard">Novo procedimento padrão</label>
+          <input id="new-standard" type="text" maxlength="100" placeholder="Novo procedimento padrão">
+          <button class="button" type="submit">Adicionar</button>
+        </form>
+      </section>
+
+      <div class="save-row">
+        <span id="save-status" role="status" aria-live="polite"></span>
+        <div class="save-actions">
+          <button id="restore-menus-button" class="button secondary" type="button">Restaurar menus de fábrica</button>
+          <button id="save-button" class="button" type="button">Salvar configurações</button>
+        </div>
+      </div>
+    </section>
+    <p class="footer-note">As alterações são salvas neste navegador e aparecem no próximo uso do gerador.</p>
+  </main>
+  <script src="config-defaults.js"></script>
+  <script src="settings.js"></script>
+</body>
+</html>
