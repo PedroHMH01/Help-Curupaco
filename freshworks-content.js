@@ -1,4 +1,7 @@
 const panelId = 'help-curupaco-panel';
+const toggleId = 'help-curupaco-toggle';
+const contentId = 'help-curupaco-content';
+const sidebarSelector = '.user-data.section.slide';
 
 function getFrameUrl() {
   const params = new URLSearchParams({
@@ -9,22 +12,25 @@ function getFrameUrl() {
 }
 
 function updateFrameContext(panel) {
+  const content = panel.querySelector(`#${contentId}`);
   const frame = panel.querySelector('iframe');
   const contextUrl = location.href;
-  if (!panel.querySelector('.help-curupaco-content').hidden &&
-      frame.dataset.contextUrl !== contextUrl) {
+  if (!content.hidden && frame.dataset.contextUrl !== contextUrl) {
     frame.dataset.contextUrl = contextUrl;
     frame.src = getFrameUrl();
   }
 }
 
 function setPanelOpen(panel, open) {
-  const toggle = panel.querySelector('.help-curupaco-toggle');
-  const content = panel.querySelector('.help-curupaco-content');
+  const toggle = panel.querySelector(`#${toggleId}`);
+  const content = panel.querySelector(`#${contentId}`);
+  const icon = toggle.querySelector('.collapsible-icon i');
   const frame = panel.querySelector('iframe');
 
+  toggle.classList.toggle('collapsed', !open);
   toggle.setAttribute('aria-expanded', String(open));
   content.hidden = !open;
+  icon.className = open ? 'fa fa-angle-down' : 'fa fa-angle-up';
   if (open && frame.dataset.contextUrl !== location.href) {
     frame.dataset.contextUrl = location.href;
     frame.src = getFrameUrl();
@@ -32,28 +38,81 @@ function setPanelOpen(panel, open) {
 }
 
 function updatePanelIcon(panel, dataUrl) {
-  const icon = panel.querySelector('.help-curupaco-toggle img');
+  const icon = panel.querySelector('.category-icon img');
   icon.src = dataUrl || chrome.runtime.getURL('icon.png');
 }
 
+function updatePanelPlacement(panel) {
+  const sidebar = document.querySelector(sidebarSelector);
+  if (!sidebar) {
+    panel.hidden = true;
+    if (panel.parentElement !== document.documentElement) {
+      document.documentElement.appendChild(panel);
+    }
+    return;
+  }
+
+  panel.hidden = false;
+  const firstItem = Array.from(sidebar.children).find(child => child !== panel);
+  if (firstItem) {
+    if (panel.parentElement !== sidebar || panel.previousElementSibling !== firstItem) {
+      sidebar.insertBefore(panel, firstItem.nextElementSibling);
+    }
+  } else if (panel.parentElement !== sidebar) {
+    sidebar.appendChild(panel);
+  }
+}
+
 function createPanel() {
-  const panel = document.createElement('section');
+  const panel = document.createElement('div');
   panel.id = panelId;
+  panel.className = 'ember-view';
+  panel.hidden = true;
+
+  const section = document.createElement('div');
+  section.className = 'section';
+
+  const accordion = document.createElement('div');
+  accordion.className = 'ui-accordian ember-view';
 
   const toggle = document.createElement('button');
   toggle.type = 'button';
-  toggle.className = 'help-curupaco-toggle';
-  toggle.title = 'Abrir Help Curupaco';
-  toggle.setAttribute('aria-label', 'Abrir Help Curupaco');
+  toggle.id = toggleId;
+  toggle.className = 'header collapsed';
   toggle.setAttribute('aria-expanded', 'false');
-  const icon = document.createElement('img');
-  icon.alt = '';
-  icon.src = chrome.runtime.getURL('icon.png');
-  toggle.appendChild(icon);
+  toggle.setAttribute('aria-controls', contentId);
+
+  const categoryIcon = document.createElement('div');
+  categoryIcon.className = 'category-icon';
+  const iconWrap = document.createElement('span');
+  iconWrap.className = 'ui-icon size-medium';
+  const image = document.createElement('img');
+  image.className = 'ui-svg-icon';
+  image.alt = '';
+  image.src = chrome.runtime.getURL('icon.png');
+  iconWrap.appendChild(image);
+  categoryIcon.appendChild(iconWrap);
+
+  const title = document.createElement('div');
+  title.className = 'category-title';
+  title.textContent = 'Help Curupaco';
+
+  const collapsibleIcon = document.createElement('div');
+  collapsibleIcon.className = 'collapsible-icon';
+  const angle = document.createElement('i');
+  angle.className = 'fa fa-angle-up';
+  angle.setAttribute('aria-hidden', 'true');
+  collapsibleIcon.appendChild(angle);
+
+  toggle.append(categoryIcon, title, collapsibleIcon);
 
   const content = document.createElement('div');
-  content.className = 'help-curupaco-content';
+  content.id = contentId;
+  content.className = 'body help-curupaco-content';
   content.hidden = true;
+
+  const card = document.createElement('div');
+  card.className = 'card card-body';
 
   const toolbar = document.createElement('div');
   toolbar.className = 'help-curupaco-toolbar';
@@ -69,8 +128,11 @@ function createPanel() {
   frame.loading = 'lazy';
 
   toolbar.appendChild(settingsButton);
-  content.append(toolbar, frame);
-  panel.append(toggle, content);
+  card.append(toolbar, frame);
+  content.appendChild(card);
+  accordion.append(toggle, content);
+  section.appendChild(accordion);
+  panel.appendChild(section);
 
   toggle.addEventListener('click', () => {
     const isOpen = toggle.getAttribute('aria-expanded') === 'true';
@@ -78,6 +140,7 @@ function createPanel() {
   });
 
   document.documentElement.appendChild(panel);
+  updatePanelPlacement(panel);
   chrome.storage.local.get('helpCurupacoIcon').then(result => {
     if (panel.isConnected) updatePanelIcon(panel, result.helpCurupacoIcon);
   }).catch(error => {
@@ -102,6 +165,8 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 let observedUrl = location.href;
 let urlCheckScheduled = false;
 const urlObserver = new MutationObserver(() => {
+  const panel = getPanel();
+  updatePanelPlacement(panel);
   if (urlCheckScheduled) return;
   urlCheckScheduled = true;
   queueMicrotask(() => {

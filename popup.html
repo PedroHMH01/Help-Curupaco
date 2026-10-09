@@ -120,7 +120,7 @@
       display: block;
     }
 
-    input[type="text"], textarea {
+    input[type="text"], textarea, .field-group select {
       width: 100%;
       padding: 8px;
       box-sizing: border-box;
@@ -129,9 +129,20 @@
       font-size: 12px;
     }
 
-    input[type="text"]:focus, textarea:focus {
+    input[type="text"]:focus, textarea:focus, .field-group select:focus {
       outline: none;
       border-color: var(--primary-purple);
+    }
+
+    .field-group textarea {
+      min-height: 58px;
+      resize: vertical;
+    }
+
+    .field-hint {
+      margin: 4px 0 0;
+      color: #666;
+      font-size: 11px;
     }
 
     .inline-inputs {
@@ -272,28 +283,37 @@
     
     <!-- Problema -->
     <div class="field-group">
-      <label>Problema relatado:</label>
-      <input type="text" id="input-problema" placeholder="Descreva o problema curto...">
+      <label for="input-problema">Problema / motivo do chamado:</label>
+      <textarea id="input-problema" placeholder="Descreva o problema ou motivo do chamado..."></textarea>
+      <select id="problem-options" aria-label="Sugestões de problema">
+        <option value="">Adicionar uma sugestão...</option>
+      </select>
+      <p class="field-hint">Escolha uma sugestão para adicioná-la ao texto. Repita para incluir mais.</p>
     </div>
 
-    <!-- Procedimentos Padrão -->
+    <!-- Procedimentos -->
     <div class="field-group">
-      <label>Procedimentos Padrão:</label>
-      <div id="standard-procedures" class="checkbox-group"></div>
+      <label for="input-procedimentos">Procedimentos realizados:</label>
+      <textarea id="input-procedimentos" placeholder="Descreva os procedimentos realizados..."></textarea>
+      <select id="procedure-options" aria-label="Sugestões de procedimentos">
+        <option value="">Adicionar uma ação...</option>
+      </select>
+      <p class="field-hint">As ações disponíveis dependem dos equipamentos selecionados. Escolha para adicioná-las ao texto.</p>
     </div>
-
-    <!-- Procedimentos Dinâmicos -->
-    <div id="dynamic-procedures"></div>
 
     <!-- Informações Importantes -->
     <div class="field-group">
-      <label>Informações importantes:</label>
-      <input type="text" id="input-info" placeholder="Observações adicionais...">
+      <label for="input-info">Informações importantes:</label>
+      <textarea id="input-info" placeholder="Inclua informações importantes..."></textarea>
+      <select id="info-options" aria-label="Sugestões de informações importantes">
+        <option value="">Adicionar uma sugestão...</option>
+      </select>
+      <p class="field-hint">Escolha uma sugestão para adicioná-la ao texto. Repita para incluir mais.</p>
     </div>
 
     <!-- AnyDesk -->
     <div class="field-group">
-      <label>AnyDesk / Acesso Remoto:</label>
+      <label for="input-anydesk">AnyDesk:</label>
       <input type="text" id="input-anydesk" placeholder="Código AnyDesk...">
     </div>
 

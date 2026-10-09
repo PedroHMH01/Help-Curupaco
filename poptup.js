@@ -13,7 +13,6 @@ const btnPrev = document.getElementById('btn-prev');
 const btnCopy = document.getElementById('btn-copy');
 const btnReset = document.getElementById('btn-reset');
 const outputText = document.getElementById('output-text');
-const dynamicProceduresDiv = document.getElementById('dynamic-procedures');
 
 // Obtém a URL da aba ativa
 async function getCurrentTabUrl() {
@@ -52,11 +51,13 @@ function saveDataForCurrentUrl() {
     bio: document.querySelector('input[name="bio"]:checked')?.value || null,
     impressora: document.querySelector('input[name="impressora"]:checked')?.value || null,
     problema: document.getElementById('input-problema')?.value || '',
+    procedimentosTexto: document.getElementById('input-procedimentos')?.value || '',
     info: document.getElementById('input-info')?.value || '',
     anydesk: document.getElementById('input-anydesk')?.value || '',
-    ipDe: document.getElementById('ip-de')?.value || '',
-    ipPara: document.getElementById('ip-para')?.value || '',
-    procedimentos: Array.from(document.querySelectorAll('.proc-cb:checked')).map(cb => cb.value),
+    procedimentos: (document.getElementById('input-procedimentos')?.value || '')
+      .split(',')
+      .map(value => value.trim())
+      .filter(Boolean),
     outputText: outputText.value
   };
 
@@ -66,9 +67,9 @@ function saveDataForCurrentUrl() {
 // Carrega os dados do storage local
 async function loadDataForCurrentUrl() {
   const storedConfig = await chrome.storage.local.get('helpCurupacoConfig');
-  config = storedConfig.helpCurupacoConfig || cloneDefaultConfig();
+  config = normalizeConfig(storedConfig.helpCurupacoConfig);
   renderEquipmentOptions();
-  renderStandardProcedures();
+  renderFieldOptions();
 
   currentUrlKey = await getCurrentTabUrl();
   if (!currentUrlKey) {
@@ -87,21 +88,21 @@ async function loadDataForCurrentUrl() {
     if (data.facial) setRadioValue('facial', data.facial);
     if (data.bio) setRadioValue('bio', data.bio);
     if (data.impressora) setRadioValue('impressora', data.impressora);
-
-    renderDynamicProcedures();
+    renderFieldOptions();
 
     if (data.problema) document.getElementById('input-problema').value = data.problema;
+    const procedureText = typeof data.procedimentosTexto === 'string'
+      ? data.procedimentosTexto
+      : Array.isArray(data.procedimentos)
+        ? data.procedimentos.map(procedure => (
+          procedure === 'Troca de IP' && (data.ipDe || data.ipPara)
+            ? `${procedure} (De: ${data.ipDe || ''} Para: ${data.ipPara || ''})`
+            : procedure
+        )).join(', ')
+        : '';
+    document.getElementById('input-procedimentos').value = procedureText;
     if (data.info) document.getElementById('input-info').value = data.info;
     if (data.anydesk) document.getElementById('input-anydesk').value = data.anydesk;
-
-    if (data.ipDe && document.getElementById('ip-de')) document.getElementById('ip-de').value = data.ipDe;
-    if (data.ipPara && document.getElementById('ip-para')) document.getElementById('ip-para').value = data.ipPara;
-
-    if (data.procedimentos) {
-      document.querySelectorAll('.proc-cb').forEach(cb => {
-        cb.checked = data.procedimentos.includes(cb.value);
-      });
-    }
 
     // Recolhe sanfonas dos itens já selecionados
     document.querySelectorAll('.accordion-content').forEach(ac => {
@@ -111,7 +112,7 @@ async function loadDataForCurrentUrl() {
     });
 
     generateSummary();
-    if (typeof data.outputText === 'string') {
+    if (typeof data.outputText === 'string' && typeof data.procedimentosTexto === 'string') {
       outputText.value = data.outputText;
     }
   });
@@ -142,106 +143,53 @@ function renderEquipmentOptions() {
   });
 }
 
-function renderStandardProcedures() {
-  const group = document.getElementById('standard-procedures');
-  const selectedValues = new Set(
-    Array.from(group.querySelectorAll('.proc-cb:checked'), checkbox => checkbox.value)
-  );
-  group.replaceChildren();
-  config.standardProcedures.forEach(procedure => {
-    const label = document.createElement('label');
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.className = 'proc-cb';
-    checkbox.value = procedure;
-    checkbox.checked = selectedValues.has(procedure);
-    label.append(checkbox, document.createTextNode(` ${procedure}`));
-    group.appendChild(label);
+function renderSelectOptions(selectId, options, placeholder) {
+  const select = document.getElementById(selectId);
+  select.replaceChildren(new Option(placeholder, ''));
+  [...new Set(options)].forEach(value => {
+    const option = new Option(value, value);
+    select.appendChild(option);
   });
 }
 
-// Renderização dos procedimentos dinâmicos
-function renderDynamicProcedures() {
-  const selectedProcedures = new Set(
-    Array.from(dynamicProceduresDiv.querySelectorAll('.proc-cb:checked'), checkbox => checkbox.value)
-  );
-  dynamicProceduresDiv.replaceChildren();
+function renderFieldOptions() {
+  renderSelectOptions('problem-options', config.problemOptions, 'Adicionar uma sugestão...');
+  renderSelectOptions('info-options', config.infoOptions, 'Adicionar uma sugestão...');
 
+  const procedures = [...config.standardProcedures];
   config.categories.forEach(category => {
     const selectedOption = document.querySelector(
       `input[name="${category.radioName}"]:checked`
     )?.value;
-    if (!selectedOption) return;
-
-    const procedures = category.proceduresByOption[selectedOption] || [];
-    if (!procedures.length) return;
-
-    const section = createSection(
-      `Procedimentos ${category.label} (${selectedOption})`,
-      procedures.map(procedure => ({
-        type: 'checkbox',
-        value: procedure,
-        label: procedure
-      }))
-    );
-
-    if (procedures.includes('Troca de IP')) {
-      const inputs = document.createElement('div');
-      inputs.className = 'inline-inputs';
-
-      const inputFrom = document.createElement('input');
-      inputFrom.type = 'text';
-      inputFrom.id = 'ip-de';
-      inputFrom.placeholder = 'De IP: Ex 192.168.0.10';
-
-      const inputTo = document.createElement('input');
-      inputTo.type = 'text';
-      inputTo.id = 'ip-para';
-      inputTo.placeholder = 'Para IP: Ex 192.168.0.15';
-
-      inputs.append(inputFrom, inputTo);
-      section.appendChild(inputs);
+    if (selectedOption) {
+      procedures.push(...(category.proceduresByOption[selectedOption] || []));
     }
-
-    dynamicProceduresDiv.appendChild(section);
   });
-
-  dynamicProceduresDiv.querySelectorAll('.proc-cb').forEach(checkbox => {
-    checkbox.checked = selectedProcedures.has(checkbox.value);
-  });
+  renderSelectOptions('procedure-options', procedures, 'Adicionar uma ação...');
 }
 
-// Auxiliar para construção limpa dos elementos DOM sem HTML dinâmico
-function createSection(titleText, items) {
-  const container = document.createElement('div');
-  container.className = 'dynamic-section';
+function appendSelectedOption(select, field) {
+  const value = select.value;
+  if (!value) return;
 
-  const title = document.createElement('label');
-  title.style.fontWeight = 'bold';
-  title.style.color = '#6f42c1';
-  title.style.fontSize = '12px';
-  title.textContent = titleText;
-  container.appendChild(title);
-
-  const group = document.createElement('div');
-  group.className = 'checkbox-group';
-  group.style.marginTop = '4px';
-
-  items.forEach(item => {
-    const lbl = document.createElement('label');
-    const input = document.createElement('input');
-    input.type = item.type;
-    input.className = 'proc-cb';
-    input.value = item.value;
-
-    lbl.appendChild(input);
-    lbl.appendChild(document.createTextNode(' ' + item.label));
-    group.appendChild(lbl);
-  });
-
-  container.appendChild(group);
-  return container;
+  const currentValues = field.value.split(',').map(item => item.trim()).filter(Boolean);
+  if (!currentValues.some(item => item.toLocaleLowerCase() === value.toLocaleLowerCase())) {
+    currentValues.push(value);
+    field.value = currentValues.join(', ');
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  select.value = '';
 }
+
+document.getElementById('problem-options').addEventListener('change', event => {
+  appendSelectedOption(event.currentTarget, document.getElementById('input-problema'));
+});
+document.getElementById('procedure-options').addEventListener('change', event => {
+  appendSelectedOption(event.currentTarget, document.getElementById('input-procedimentos'));
+});
+document.getElementById('info-options').addEventListener('change', event => {
+  appendSelectedOption(event.currentTarget, document.getElementById('input-info'));
+});
 
 // Constrói o texto do repasse
 function generateSummary() {
@@ -258,18 +206,8 @@ function generateSummary() {
   if (bio) { tiposEquip.push('Leitor Biométrico'); marcaModelo.push(bio); }
   if (impressora) { tiposEquip.push('Impressora'); marcaModelo.push(impressora); }
 
-  const procedimentos = [];
-  document.querySelectorAll('.proc-cb:checked').forEach(cb => {
-    let val = cb.value;
-    if (val === 'Troca de IP') {
-      const de = document.getElementById('ip-de')?.value || '';
-      const para = document.getElementById('ip-para')?.value || '';
-      if (de || para) val += ` (De: ${de} Para: ${para})`;
-    }
-    procedimentos.push(val);
-  });
-
   const problema = document.getElementById('input-problema')?.value || '';
+  const procedimentos = document.getElementById('input-procedimentos')?.value || '';
   const info = document.getElementById('input-info')?.value || '';
   const anydesk = document.getElementById('input-anydesk')?.value || '';
 
@@ -283,7 +221,7 @@ Marca/Modelo: ${marcaModelo.join(', ')}
 
 Problema: ${problema}
 
-Procedimentos realizados: ${procedimentos.join(', ')}
+Procedimentos realizados: ${procedimentos}
 
 Informações importantes: ${info}
 
@@ -297,7 +235,7 @@ btnNext.addEventListener('click', () => {
     document.getElementById('step-1').classList.remove('active');
     document.getElementById('step-2').classList.add('active');
     btnPrev.disabled = false;
-    btnNext.innerText = 'Finalizar';
+    btnNext.hidden = true;
   }
 });
 
@@ -307,7 +245,7 @@ btnPrev.addEventListener('click', () => {
     document.getElementById('step-2').classList.remove('active');
     document.getElementById('step-1').classList.add('active');
     btnPrev.disabled = true;
-    btnNext.innerText = 'Próximo';
+    btnNext.hidden = false;
   }
 });
 
@@ -329,10 +267,7 @@ document.addEventListener('change', (e) => {
     if (parentAccordion) {
       parentAccordion.classList.add('collapsed');
     }
-    renderDynamicProcedures();
-    generateSummary();
-    saveDataForCurrentUrl();
-  } else if (e.target.matches('.proc-cb')) {
+    renderFieldOptions();
     generateSummary();
     saveDataForCurrentUrl();
   }
@@ -341,7 +276,7 @@ document.addEventListener('change', (e) => {
 document.addEventListener('input', (e) => {
   if (e.target === outputText) {
     saveDataForCurrentUrl();
-  } else if (['input-problema', 'input-info', 'input-anydesk', 'ip-de', 'ip-para'].includes(e.target.id)) {
+  } else if (['input-problema', 'input-procedimentos', 'input-info', 'input-anydesk'].includes(e.target.id)) {
     generateSummary();
     saveDataForCurrentUrl();
   }
@@ -391,16 +326,16 @@ btnCopy.addEventListener('click', async () => {
 btnReset.addEventListener('click', () => {
   document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
   document.querySelectorAll('input[type="checkbox"]').forEach(c => c.checked = false);
-  document.querySelectorAll('input[type="text"]').forEach(i => i.value = '');
+  document.querySelectorAll('input[type="text"], textarea').forEach(i => i.value = '');
   document.querySelectorAll('.accordion-content').forEach(ac => ac.classList.remove('collapsed'));
 
   currentStep = 1;
   document.getElementById('step-2').classList.remove('active');
   document.getElementById('step-1').classList.add('active');
   btnPrev.disabled = true;
-  btnNext.innerText = 'Próximo';
+  btnNext.hidden = false;
 
-  renderDynamicProcedures();
+  renderFieldOptions();
   generateSummary();
 
   if (currentUrlKey) {
@@ -413,10 +348,9 @@ loadDataForCurrentUrl();
 
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName !== 'local' || !changes.helpCurupacoConfig) return;
-  config = changes.helpCurupacoConfig.newValue || cloneDefaultConfig();
+  config = normalizeConfig(changes.helpCurupacoConfig.newValue);
   renderEquipmentOptions();
-  renderStandardProcedures();
-  renderDynamicProcedures();
+  renderFieldOptions();
   generateSummary();
   saveDataForCurrentUrl();
 });

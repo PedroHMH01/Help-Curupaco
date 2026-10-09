@@ -9,6 +9,8 @@ const equipmentSelect = document.getElementById('equipment-select');
 const equipmentList = document.getElementById('equipment-list');
 const procedureList = document.getElementById('procedure-list');
 const standardList = document.getElementById('standard-list');
+const problemOptionsList = document.getElementById('problem-options-list');
+const infoOptionsList = document.getElementById('info-options-list');
 const equipmentEditor = document.getElementById('equipment-editor');
 const standardEditor = document.getElementById('standard-editor');
 const saveStatus = document.getElementById('save-status');
@@ -60,6 +62,19 @@ function renderCategoryOptions() {
 }
 
 function renderEditor() {
+  renderProcedureList(problemOptionsList, config.problemOptions, (index, value) => {
+    config.problemOptions[index] = value;
+  }, index => {
+    config.problemOptions.splice(index, 1);
+    renderEditor();
+  });
+  renderProcedureList(infoOptionsList, config.infoOptions, (index, value) => {
+    config.infoOptions[index] = value;
+  }, index => {
+    config.infoOptions.splice(index, 1);
+    renderEditor();
+  });
+
   const isStandard = categorySelect.value === STANDARD_CATEGORY;
   equipmentEditor.hidden = isStandard;
   standardEditor.hidden = !isStandard;
@@ -231,6 +246,20 @@ document.getElementById('add-standard-form').addEventListener('submit', event =>
   });
 });
 
+document.getElementById('add-problem-option-form').addEventListener('submit', event => {
+  event.preventDefault();
+  addEntry('new-problem-option', config.problemOptions, value => {
+    config.problemOptions.push(value);
+  });
+});
+
+document.getElementById('add-info-option-form').addEventListener('submit', event => {
+  event.preventDefault();
+  addEntry('new-info-option', config.infoOptions, value => {
+    config.infoOptions.push(value);
+  });
+});
+
 document.getElementById('save-button').addEventListener('click', async () => {
   try {
     await chrome.storage.local.set({ [CONFIG_KEY]: config });
@@ -242,7 +271,7 @@ document.getElementById('save-button').addEventListener('click', async () => {
 });
 
 document.getElementById('restore-menus-button').addEventListener('click', async () => {
-  if (!window.confirm('Restaurar equipamentos e procedimentos para a versão de fábrica? Essa ação não altera o ícone personalizado nem os dados de repasse salvos.')) {
+  if (!window.confirm('Restaurar equipamentos, procedimentos e sugestões para a versão de fábrica? Essa ação não altera o ícone personalizado nem os dados de repasse salvos.')) {
     return;
   }
 
@@ -302,7 +331,7 @@ document.getElementById('remove-icon').addEventListener('click', async () => {
 async function initializeSettings() {
   try {
     const values = await chrome.storage.local.get([CONFIG_KEY, ICON_KEY]);
-    config = values[CONFIG_KEY] || cloneDefaultConfig();
+    config = normalizeConfig(values[CONFIG_KEY]);
     customIcon = values[ICON_KEY] || null;
     updateIconPreview(customIcon);
     renderCategoryOptions();

@@ -1,4 +1,16 @@
 const DEFAULT_CONFIG = {
+  problemOptions: [
+    'Equipamento sem comunicação',
+    'Falha de conexão com a rede',
+    'Problema após atualização',
+    'Equipamento não reconhecido pelo sistema'
+  ],
+  infoOptions: [
+    'Equipamento testado e funcionando',
+    'Aguardando retorno do cliente',
+    'Necessário acompanhamento',
+    'Problema não reproduzido durante os testes'
+  ],
   standardProcedures: [
     'Ressincronização de banco',
     'Instalação completa',
@@ -82,4 +94,18 @@ const DEFAULT_CONFIG = {
 
 function cloneDefaultConfig() {
   return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+}
+
+function normalizeConfig(value) {
+  const defaults = cloneDefaultConfig();
+  return {
+    ...defaults,
+    ...value,
+    problemOptions: Array.isArray(value?.problemOptions) ? value.problemOptions : defaults.problemOptions,
+    infoOptions: Array.isArray(value?.infoOptions) ? value.infoOptions : defaults.infoOptions,
+    standardProcedures: Array.isArray(value?.standardProcedures)
+      ? value.standardProcedures
+      : defaults.standardProcedures,
+    categories: Array.isArray(value?.categories) ? value.categories : defaults.categories
+  };
 }
