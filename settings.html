@@ -18,6 +18,33 @@
     </header>
 
     <section class="card">
+      <h2>Tema do Freshworks e do gerador</h2>
+      <p>“Roxo clássico” mantém o estilo original do Freshworks. As outras paletas e a imagem PNG também podem alterar o visual do CRM.</p>
+      <label class="field-label" for="theme-select">Paleta de cores</label>
+      <select id="theme-select">
+        <option value="purple">Roxo clássico</option>
+        <option value="ocean">Oceano</option>
+        <option value="forest">Floresta</option>
+        <option value="sunset">Pôr do sol</option>
+        <option value="midnight">Noturno</option>
+      </select>
+      <div class="theme-controls">
+        <div id="theme-preview" class="theme-preview" aria-label="Prévia do tema">
+          <div class="theme-preview-card">
+            <strong>Help Curupaco</strong>
+            <span>Prévia do tema selecionado</span>
+          </div>
+        </div>
+        <div class="theme-image-controls">
+          <label class="button secondary" for="theme-background-file">Escolher fundo PNG</label>
+          <input id="theme-background-file" type="file" accept="image/png,.png">
+          <button id="remove-theme-background" class="button secondary" type="button">Remover fundo PNG</button>
+          <span class="hint">Imagem PNG de até 2 MB, aplicada ao gerador e ao fundo do histórico de conversa do Freshworks. As paletas diferentes de “Roxo clássico” também personalizam o restante do CRM.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
       <h2>Ícone no Freshworks</h2>
       <p>Escolha uma imagem para o botão redondo do Help Curupaco no CRM. A imagem também aparece aqui como prévia.</p>
       <div class="icon-controls">
@@ -27,6 +54,23 @@
         <button id="remove-icon" class="button secondary" type="button">Usar ícone padrão</button>
         <span class="hint">PNG, JPG, WEBP, GIF, SVG ou ICO; máximo de 1 MB.</span>
       </div>
+    </section>
+
+    <section class="card">
+      <h2>Observações compartilhadas por conversa</h2>
+      <p>Configure o Supabase para que a equipe consulte e acrescente observações permanentes às conversas do Freshworks.</p>
+      <label class="field-label" for="supabase-url">URL do projeto Supabase</label>
+      <input id="supabase-url" type="url" autocomplete="url" spellcheck="false"
+        value="https://jvqeqlshhbcpwphcnrpg.supabase.co">
+      <label class="field-label" for="supabase-anon-key">Chave pública anon / publishable</label>
+      <input id="supabase-anon-key" type="password" autocomplete="off" spellcheck="false"
+        placeholder="Cole aqui a chave pública do projeto">
+      <p class="hint">Use somente a chave pública anon/publishable, nunca a chave service_role. O nome do agente vem do Freshworks e não é validado pelo Supabase. O acesso foi configurado como público: qualquer pessoa com a URL e a chave pode ler e inserir; atualização e exclusão ficam bloqueadas pelas políticas do banco.</p>
+      <div class="save-row">
+        <span id="observations-config-status" role="status" aria-live="polite"></span>
+        <button id="save-observations-config" class="button" type="button">Salvar conexão</button>
+      </div>
+      <p class="hint">Antes de usar, execute o script <code>supabase/conversation-observations.sql</code> no SQL Editor do projeto. Depois de salvar, atualize a aba do Freshworks.</p>
     </section>
 
     <section class="card">

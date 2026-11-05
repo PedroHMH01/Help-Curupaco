@@ -57,7 +57,832 @@
 #help-curupaco-panel iframe {
   display: block;
   width: 100%;
-  height: 560px;
+  height: 1000px;
   border: 0;
   background: #fff;
+}
+
+#help-curupaco-observations-panel {
+  display: block;
+  width: 100%;
+}
+
+#help-curupaco-observations-panel[hidden],
+#help-curupaco-observations-panel .hc-observations-content[hidden] {
+  display: none !important;
+}
+
+#help-curupaco-observations-panel .hc-observations-toggle {
+  box-sizing: border-box;
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+}
+
+#help-curupaco-observations-panel .category-icon .fa {
+  width: 24px;
+  text-align: center;
+}
+
+#help-curupaco-observations-panel .hc-observations-card {
+  padding: 12px;
+  color: var(--hc-theme-text, #212529);
+  background: var(--hc-theme-surface, #fff);
+}
+
+#help-curupaco-observations-panel .hc-observations-status,
+#help-curupaco-observations-panel .hc-observations-empty {
+  margin: 0 0 10px;
+  color: var(--hc-theme-muted, #666);
+  font-size: 12px;
+}
+
+#help-curupaco-observations-panel .hc-observations-status.is-error {
+  color: #b42332;
+}
+
+#help-curupaco-observations-panel .hc-observations-form {
+  display: grid;
+  gap: 8px;
+}
+
+#help-curupaco-observations-panel .hc-observations-form textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 84px;
+  padding: 8px;
+  resize: vertical;
+  border: 1px solid var(--hc-theme-border, #d1b8f5);
+  border-radius: 6px;
+  color: var(--hc-theme-text, #212529);
+  background: var(--hc-theme-surface-alt, #fcfaff);
+  font: inherit;
+}
+
+#help-curupaco-observations-panel .hc-observations-submit {
+  justify-self: end;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--hc-theme-button-text, #fff);
+  background: var(--hc-theme-accent, #6f42c1);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+#help-curupaco-observations-panel .hc-observations-submit:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+#help-curupaco-observations-panel .hc-observations-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+#help-curupaco-observations-panel .hc-observation-entry {
+  padding: 9px;
+  border: 1px solid var(--hc-theme-border, #d1b8f5);
+  border-left: 3px solid var(--hc-theme-accent, #6f42c1);
+  border-radius: 6px;
+  color: var(--hc-theme-text, #212529);
+  background: var(--hc-theme-surface-alt, #fcfaff);
+}
+
+#help-curupaco-observations-panel .hc-observation-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 11px;
+}
+
+#help-curupaco-observations-panel .hc-observation-meta time {
+  color: var(--hc-theme-muted, #666);
+  text-align: right;
+}
+
+#help-curupaco-observations-panel .hc-observation-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+html[data-help-curupaco-theme] body {
+  color: var(--hc-theme-text) !important;
+  background-color: var(--hc-theme-page) !important;
+  background-image: var(--hc-theme-background-image, none) !important;
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+html[data-help-curupaco-theme] .wrapper-container :is(
+  p,
+  span,
+  label,
+  small,
+  strong,
+  em,
+  td,
+  th,
+  h1,
+  h2,
+  h3,
+  h4
+):not(.fc-ui-message-bubble):not(.fc-ui-message-bubble *) {
+  color: var(--hc-theme-text) !important;
+}
+
+html[data-help-curupaco-theme] .wrapper-container,
+html[data-help-curupaco-theme] .side-nav-bar,
+html[data-help-curupaco-theme] .top-nav-bar,
+html[data-help-curupaco-theme] .navbar-secondary,
+html[data-help-curupaco-theme] .viewport,
+html[data-help-curupaco-theme] .conversations-cover,
+html[data-help-curupaco-theme] .conversations,
+html[data-help-curupaco-theme] .conversation,
+html[data-help-curupaco-theme] .pivot-convo-container,
+html[data-help-curupaco-theme] #conversation-panels,
+html[data-help-curupaco-theme] .messages,
+html[data-help-curupaco-theme] .ui-chat,
+html[data-help-curupaco-theme] #aw-chat-wrapper,
+html[data-help-curupaco-theme] .user-meta-wrapper {
+  color: var(--hc-theme-text) !important;
+  background-color: var(--hc-theme-page) !important;
+}
+
+html[data-help-curupaco-theme] .convo-action,
+html[data-help-curupaco-theme] .filter-message,
+html[data-help-curupaco-theme] .bulk-actions,
+html[data-help-curupaco-theme] .dropdown-filter,
+html[data-help-curupaco-theme] .convo-unpin,
+html[data-help-curupaco-theme] .middle-pane-filter,
+html[data-help-curupaco-theme] .table-view-header,
+html[data-help-curupaco-theme] .conversation-details,
+html[data-help-curupaco-theme] .pivot-view-header,
+html[data-help-curupaco-theme] .user-data .header,
+html[data-help-curupaco-theme] .user-data .card,
+html[data-help-curupaco-theme] .card-container,
+html[data-help-curupaco-theme] .nav-container-wrapper,
+html[data-help-curupaco-theme] .left-pane-convo-details,
+html[data-help-curupaco-theme] [data-test-conversation="list-item"] {
+  color: var(--hc-theme-text) !important;
+  background-color: var(--hc-theme-surface) !important;
+}
+
+html[data-help-curupaco-theme] .last-msg,
+html[data-help-curupaco-theme] .last-msg-wrapper,
+html[data-help-curupaco-theme] .last-msg .fc-ui-emoji-text {
+  color: var(--hc-theme-text) !important;
+}
+
+html[data-help-curupaco-theme] .last-msg .fc-ui-emoji-text {
+  opacity: 1 !important;
+}
+
+html[data-help-curupaco-theme] .load-more[data-test-loadmore] {
+  color: var(--hc-theme-text) !important;
+  background-color: var(--hc-theme-surface) !important;
+  border-color: var(--hc-theme-border) !important;
+}
+
+html[data-help-curupaco-theme] .load-more[data-test-loadmore]:hover {
+  background-color: var(--hc-theme-surface-alt) !important;
+}
+
+html[data-help-curupaco-theme] .fc-agent-message .fc-ui-message-bubble.comment {
+  color: #ffffff !important;
+  background-color: #2b2938 !important;
+  border-color: #2b2938 !important;
+}
+
+html[data-help-curupaco-theme] .fc-agent-message .fc-ui-message-bubble.comment * {
+  color: #ffffff !important;
+}
+
+html[data-help-curupaco-theme] .note-bubble {
+  background-color: transparent !important;
+}
+
+html[data-help-curupaco-theme] .note-bubble .chat-container {
+  background-color: transparent !important;
+}
+
+html[data-help-curupaco-theme] #conversation-panels .note-bubble .fc-ui-message-bubble.comment,
+html[data-help-curupaco-theme] #conversation-panels .fc-agent-message .fc-ui-message-bubble.comment {
+  color: #ffffff !important;
+  background: #2b2938 !important;
+  border-color: #2b2938 !important;
+  border-radius: 12px !important;
+}
+
+html[data-help-curupaco-theme] #conversation-panels .note-bubble .fc-ui-message-bubble.comment {
+  background: #352d45 !important;
+  box-shadow: inset 3px 0 0 var(--hc-theme-accent);
+}
+
+html[data-help-curupaco-theme] #conversation-panels .note-bubble .fc-ui-message-bubble.comment *,
+html[data-help-curupaco-theme] #conversation-panels .fc-agent-message .fc-ui-message-bubble.comment * {
+  color: #ffffff !important;
+}
+
+html[data-help-curupaco-theme] #conversation-panels .note-bubble .fc-ui-message-bubble.comment .fc-ui-unity-message,
+html[data-help-curupaco-theme] #conversation-panels .note-bubble .fc-ui-message-bubble.comment .fc-ui-unity-message .text,
+html[data-help-curupaco-theme] #conversation-panels .note-bubble .fc-ui-message-bubble.comment .fc-ui-emoji-text {
+  color: #ffffff !important;
+  background: transparent !important;
+}
+
+html[data-help-curupaco-theme] #conversation-panels .note-bubble [data-test-action="create-thread"],
+html[data-help-curupaco-theme] #conversation-panels .note-bubble [data-test-action="create-thread"] * {
+  color: #ffffff !important;
+}
+
+html[data-help-curupaco-theme] .cust-name,
+html[data-help-curupaco-theme] .name-container,
+html[data-help-curupaco-theme] .conversation-status-title,
+html[data-help-curupaco-theme] .channel-name,
+html[data-help-curupaco-theme] .conversation-details,
+html[data-help-curupaco-theme] .conversation-details *,
+html[data-help-curupaco-theme] .user-meta-wrapper .left-column,
+html[data-help-curupaco-theme] .user-meta-wrapper .right-column,
+html[data-help-curupaco-theme] .user-meta-wrapper .user-name,
+html[data-help-curupaco-theme] .user-meta-wrapper .user-location,
+html[data-help-curupaco-theme] .user-meta-wrapper .user-conversation-history {
+  color: var(--hc-theme-text) !important;
+}
+
+html[data-help-curupaco-theme] .conversation-details,
+html[data-help-curupaco-theme] .pivot-view-header,
+html[data-help-curupaco-theme] .middle-pane-filter,
+html[data-help-curupaco-theme] .table-view-header,
+html[data-help-curupaco-theme] .user-data .header,
+html[data-help-curupaco-theme] .filter-message,
+html[data-help-curupaco-theme] .left-pane-convo-details,
+html[data-help-curupaco-theme] .pivot-convo-container,
+html[data-help-curupaco-theme] .user-meta-wrapper {
+  border-color: var(--hc-theme-border) !important;
+}
+
+html[data-help-curupaco-theme] .view-filter,
+html[data-help-curupaco-theme] .filter-link,
+html[data-help-curupaco-theme] .filter,
+html[data-help-curupaco-theme] .tw-text-blue-dark,
+html[data-help-curupaco-theme] .category-title,
+html[data-help-curupaco-theme] .convo-topic,
+html[data-help-curupaco-theme] .topic-name,
+html[data-help-curupaco-theme] .conversation-details a,
+html[data-help-curupaco-theme] .user-meta-wrapper a {
+  color: var(--hc-theme-accent) !important;
+}
+
+html[data-help-curupaco-theme] .convo-created,
+html[data-help-curupaco-theme] .convo-assigned,
+html[data-help-curupaco-theme] .message-status-text,
+html[data-help-curupaco-theme] .message-info,
+html[data-help-curupaco-theme] .message-info .time,
+html[data-help-curupaco-theme] .date,
+html[data-help-curupaco-theme] .sla-date,
+html[data-help-curupaco-theme] .user-meta-wrapper .text-muted,
+html[data-help-curupaco-theme] .user-meta-wrapper .field-label {
+  color: var(--hc-theme-muted) !important;
+}
+
+html[data-help-curupaco-theme] .chat-container-wrap .user-name,
+html[data-help-curupaco-theme] .chat-container-wrap .user-name .name {
+  color: var(--hc-theme-accent) !important;
+}
+
+html[data-help-curupaco-theme] .left-pane-convo-details:hover,
+html[data-help-curupaco-theme] [data-test-conversation="list-item"]:hover {
+  background-color: var(--hc-theme-accent-soft) !important;
+}
+
+html[data-help-curupaco-theme] .reply-chat-type,
+html[data-help-curupaco-theme] .message-editor,
+html[data-help-curupaco-theme] .send-message,
+html[data-help-curupaco-theme] .msg-reply-box,
+html[data-help-curupaco-theme] [data-test-medium-editor-disable-wrapper],
+html[data-help-curupaco-theme] .user-details-card,
+html[data-help-curupaco-theme] .user-meta-wrapper .user-card,
+html[data-help-curupaco-theme] .user-meta-wrapper .user-card .row,
+html[data-help-curupaco-theme] .user-meta-wrapper #user-card-wrapper,
+html[data-help-curupaco-theme] .user-meta-wrapper #data-contact-info,
+html[data-help-curupaco-theme] .user-meta-wrapper .contact-fields,
+html[data-help-curupaco-theme] .user-meta-wrapper .scroll-hide,
+html[data-help-curupaco-theme] .user-meta-wrapper .body,
+html[data-help-curupaco-theme] .user-meta-wrapper .card-body {
+  color: var(--hc-theme-text) !important;
+  background-color: var(--hc-theme-surface) !important;
+  border-color: var(--hc-theme-border) !important;
+}
+
+html[data-help-curupaco-theme] .user-meta-wrapper .table,
+html[data-help-curupaco-theme] .user-meta-wrapper .table tr,
+html[data-help-curupaco-theme] .user-meta-wrapper .table td,
+html[data-help-curupaco-theme] .user-meta-wrapper .user-details,
+html[data-help-curupaco-theme] .user-meta-wrapper .user-info,
+html[data-help-curupaco-theme] .user-meta-wrapper .user-details-second-row {
+  color: var(--hc-theme-text) !important;
+  background-color: var(--hc-theme-surface) !important;
+  border-color: var(--hc-theme-border) !important;
+}
+
+html[data-help-curupaco-theme] .msg-reply-box,
+html[data-help-curupaco-theme] [data-test-medium-editor-disable-wrapper],
+html[data-help-curupaco-theme] .reply-chat-type input,
+html[data-help-curupaco-theme] .reply-chat-type select,
+html[data-help-curupaco-theme] .reply-chat-type textarea,
+html[data-help-curupaco-theme] .reply-chat-type .form-control {
+  color: var(--hc-theme-text) !important;
+  background-color: var(--hc-theme-surface-alt) !important;
+  border-color: var(--hc-theme-border) !important;
+  caret-color: var(--hc-theme-text);
+}
+
+html[data-help-curupaco-theme] .reply-chat-type .dropdown-menu,
+html[data-help-curupaco-theme] .user-meta-wrapper .dropdown-menu,
+html[data-help-curupaco-theme] .user-meta-wrapper input,
+html[data-help-curupaco-theme] .user-meta-wrapper select,
+html[data-help-curupaco-theme] .user-meta-wrapper textarea {
+  color: var(--hc-theme-text) !important;
+  background-color: var(--hc-theme-surface-alt) !important;
+  border-color: var(--hc-theme-border) !important;
+}
+
+html[data-help-curupaco-theme] #composor-container [class~="tw-bg-white"],
+html[data-help-curupaco-theme] #reply-type-tabs,
+html[data-help-curupaco-theme] #composor-container .reply-chat-type input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+html[data-help-curupaco-theme] #composor-container .reply-chat-type select,
+html[data-help-curupaco-theme] #composor-container .reply-chat-type [role="combobox"],
+html[data-help-curupaco-theme] #composor-container .reply-chat-type .ember-basic-dropdown-trigger {
+  color: var(--hc-theme-text) !important;
+  background-color: var(--hc-theme-surface-alt) !important;
+  border-color: var(--hc-theme-border) !important;
+}
+
+html[data-help-curupaco-theme] #channelSwitcherPopUp,
+html[data-help-curupaco-theme] #channelSwitcherPopUp .channel-switcher-block,
+html[data-help-curupaco-theme] #channelSwitcherPopUp #available_channels,
+html[data-help-curupaco-theme] #channelSwitcherPopUp #available_channels ul {
+  color: var(--hc-theme-text) !important;
+  background-color: var(--hc-theme-surface) !important;
+  border-color: var(--hc-theme-border) !important;
+}
+
+html[data-help-curupaco-theme] #channelSwitcherPopUp p,
+html[data-help-curupaco-theme] #channelSwitcherPopUp .tw-text-gray-darker {
+  color: var(--hc-theme-text) !important;
+}
+
+html[data-help-curupaco-theme] #channelSwitcherPopUp .tw-bg-blue-lightest {
+  background-color: var(--hc-theme-accent-soft) !important;
+}
+
+html[data-help-curupaco-theme] #channelSwitcherPopUp [class*="hover:tw-bg-gray-lighter"]:hover {
+  background-color: var(--hc-theme-accent-soft) !important;
+}
+
+html[data-help-curupaco-theme] .reply-tab.active,
+html[data-help-curupaco-theme] .private-note-tab,
+html[data-help-curupaco-theme] .send-message button {
+  color: var(--hc-theme-accent) !important;
+  border-color: var(--hc-theme-accent) !important;
+}
+
+html[data-help-curupaco-theme] .message,
+html[data-help-curupaco-theme] .chat-messages,
+html[data-help-curupaco-theme] .chat-container {
+  background-color: transparent;
+}
+
+html[data-help-curupaco-chat-background] #aw-chat-wrapper {
+  background-color: transparent !important;
+  background-image: var(--hc-theme-chat-background-image) !important;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
+}
+
+html[data-help-curupaco-chat-background] #aw-chat-wrapper .inbox-convo-chat,
+html[data-help-curupaco-chat-background] #aw-chat-wrapper .chat-container-wrap,
+html[data-help-curupaco-chat-background] #aw-chat-wrapper .chat-container,
+html[data-help-curupaco-chat-background] #aw-chat-wrapper .chat-messages,
+html[data-help-curupaco-chat-background] #aw-chat-wrapper .message-status-container {
+  background-color: transparent !important;
+}
+
+html[data-help-curupaco-theme] .user-image freshworks-user-avatar {
+  box-sizing: border-box;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  overflow: hidden;
+  border-radius: 50%;
+  line-height: 0;
+  flex: 0 0 30px;
+  vertical-align: middle;
+}
+
+html[data-help-curupaco-theme] .global-search,
+html[data-help-curupaco-theme] .global-search-result-container,
+html[data-help-curupaco-theme] .global-search-result,
+html[data-help-curupaco-theme] .global-search-content,
+html[data-help-curupaco-theme] .global-search-list,
+html[data-help-curupaco-theme] .global-search-result .nav-tabs,
+html[data-help-curupaco-theme] .global-search-result .nav-tabs > li,
+html[data-help-curupaco-theme] .global-search-result .nav-tabs > li > a,
+html[data-help-curupaco-theme] .global-search-load-more,
+html[data-help-curupaco-theme] .global-search-load-more > a,
+html[data-help-curupaco-theme] .global-search-load-more .load-more-content,
+html[data-help-curupaco-theme] .global-search-result .error-page-wrap {
+  color: var(--hc-theme-text) !important;
+  background-color: var(--hc-theme-surface) !important;
+  border-color: var(--hc-theme-border) !important;
+}
+
+html[data-help-curupaco-theme] .global-search .search-icon,
+html[data-help-curupaco-theme] .global-search .search-text,
+html[data-help-curupaco-theme] .global-search input,
+html[data-help-curupaco-theme] .global-search button,
+html[data-help-curupaco-theme] .global-search [role="button"],
+html[data-help-curupaco-theme] .dropdown-filter .create-new-convo-icon,
+html[data-help-curupaco-theme] .dropdown-filter .filter-link.dropdown-link,
+html[data-help-curupaco-theme] .dropdown-filter .filter-link.dropdown-link .ui-icon,
+html[data-help-curupaco-theme] .hamburger-menu .trigger,
+html[data-help-curupaco-theme] .wait-state-options .state-trigger,
+html[data-help-curupaco-theme] .sla-enabled .toggle-button-sla,
+html[data-help-curupaco-theme] .middle-pane-filter .filter-link,
+html[data-help-curupaco-theme] .middle-pane-filter .view-filter,
+html[data-help-curupaco-theme] .middle-pane-filter .toggle-button-sla,
+html[data-help-curupaco-theme] .middle-pane-filter [data-test-info-options] {
+  color: var(--hc-theme-text) !important;
+  background-color: var(--hc-theme-surface) !important;
+  border-color: var(--hc-theme-border) !important;
+  box-shadow: none !important;
+}
+
+html[data-help-curupaco-theme] .dropdown-filter .filter-dropdown,
+html[data-help-curupaco-theme] .dropdown-filter .filter-dropdown li,
+html[data-help-curupaco-theme] .dropdown-filter .filter-dropdown .dropdown-menu-link {
+  color: var(--hc-theme-text) !important;
+  background-color: var(--hc-theme-surface) !important;
+  border-color: var(--hc-theme-border) !important;
+}
+
+html[data-help-curupaco-theme] .dropdown-filter .filter-dropdown .dropdown-menu-link:hover,
+html[data-help-curupaco-theme] .dropdown-filter .filter-dropdown .dropdown-menu-link:hover * {
+  background-color: var(--hc-theme-accent-soft) !important;
+}
+
+html[data-help-curupaco-theme] .global-search-result .nav-tabs > li.active,
+html[data-help-curupaco-theme] .global-search-result .nav-tabs > li.active > a,
+html[data-help-curupaco-theme] .global-search-load-more > a:hover {
+  color: var(--hc-theme-accent) !important;
+  background-color: var(--hc-theme-surface-alt) !important;
+}
+
+html[data-help-curupaco-theme] .global-search-result .error-desc-title,
+html[data-help-curupaco-theme] .global-search-result .load-more-content {
+  color: var(--hc-theme-text) !important;
+}
+
+html[data-help-curupaco-theme] .filter-link.dropdown-link,
+html[data-help-curupaco-theme] .filter-link.dropdown-link:hover,
+html[data-help-curupaco-theme] .filter-link.dropdown-link[aria-expanded="true"] {
+  background-color: var(--hc-theme-surface) !important;
+  border-color: var(--hc-theme-border) !important;
+}
+
+html[data-help-curupaco-theme] .filter-link.dropdown-link .ui-icon,
+html[data-help-curupaco-theme] .filter-link.dropdown-link .ui-svg-icon {
+  color: var(--hc-theme-text) !important;
+}
+
+html[data-help-curupaco-theme] mfe-application {
+  --freddy-white-color: var(--hc-theme-surface) !important;
+  --freddy-s25: var(--hc-theme-page) !important;
+  --freddy-s50: var(--hc-theme-page) !important;
+  --freddy-s75: var(--hc-theme-surface-alt) !important;
+  --freddy-s100: var(--hc-theme-surface) !important;
+  --freddy-s500: var(--hc-theme-muted) !important;
+  --freddy-s700: var(--hc-theme-text) !important;
+  --freddy-border-color: var(--hc-theme-border) !important;
+  --freddy-border-gray-color: var(--hc-theme-border) !important;
+  --freddy-normal-border-color: var(--hc-theme-border) !important;
+}
+
+html[data-help-curupaco-theme] mfe-application input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="hidden"]):not([type="range"]):not([type="color"]),
+html[data-help-curupaco-theme] mfe-application select,
+html[data-help-curupaco-theme] mfe-application textarea,
+html[data-help-curupaco-theme] mfe-application [role="combobox"] {
+  color: var(--hc-theme-text) !important;
+  background-color: var(--hc-theme-surface-alt) !important;
+  border-color: var(--hc-theme-border) !important;
+  caret-color: var(--hc-theme-text);
+}
+
+html[data-help-curupaco-theme] .unity-compose-editor,
+html[data-help-curupaco-theme] .unity-compose-editor .insert-action,
+html[data-help-curupaco-theme] .unity-compose-editor .send-message,
+html[data-help-curupaco-theme] .unity-compose-editor .reply-chat-type,
+html[data-help-curupaco-theme] .unity-compose-editor .nav-tabs,
+html[data-help-curupaco-theme] .unity-compose-editor .nav-tabs > li,
+html[data-help-curupaco-theme] .unity-compose-editor .nav-tabs > li > a,
+html[data-help-curupaco-theme] .unity-compose-editor .message-editor-tool-icon,
+html[data-help-curupaco-theme] .unity-compose-editor [class~="tw-bg-white"] {
+  color: var(--hc-theme-text) !important;
+  background-color: var(--hc-theme-surface) !important;
+  border-color: var(--hc-theme-border) !important;
+}
+
+html[data-help-curupaco-theme] .unity-compose-editor [class~="tw-bg-blue-lightest"] {
+  background-color: var(--hc-theme-accent-soft) !important;
+}
+
+html[data-help-curupaco-theme] .unity-compose-editor .msg-reply-box,
+html[data-help-curupaco-theme] .unity-compose-editor [data-test-medium-editor-disable-wrapper] {
+  color: var(--hc-theme-text) !important;
+  background-color: var(--hc-theme-surface-alt) !important;
+  border-color: var(--hc-theme-border) !important;
+}
+
+html[data-help-curupaco-theme] .unity-compose-editor .send-message .send {
+  color: var(--hc-theme-button-text, #ffffff) !important;
+  background-color: var(--hc-theme-accent) !important;
+  border-color: var(--hc-theme-accent) !important;
+}
+
+html[data-help-curupaco-theme] .unity-compose-editor .send-message .send-text,
+html[data-help-curupaco-theme] .unity-compose-editor .send-message .send .ui-icon {
+  color: var(--hc-theme-button-text, #ffffff) !important;
+}
+
+html[data-help-curupaco-theme] .cannedresponse-popup,
+html[data-help-curupaco-theme] .cannedresponse-popup .select-canned-response,
+html[data-help-curupaco-theme] .cannedresponse-popup .canned-response-header,
+html[data-help-curupaco-theme] .cannedresponse-popup .search-canned-responses,
+html[data-help-curupaco-theme] .cannedresponse-popup .search-field,
+html[data-help-curupaco-theme] .cannedresponse-popup .canned-response-content,
+html[data-help-curupaco-theme] .cannedresponse-popup .canned-responses,
+html[data-help-curupaco-theme] .cannedresponse-popup .crs-categories,
+html[data-help-curupaco-theme] .cannedresponse-popup .crs-code-section,
+html[data-help-curupaco-theme] .cannedresponse-popup .crs-category,
+html[data-help-curupaco-theme] .cannedresponse-popup li,
+html[data-help-curupaco-theme] .cannedresponse-popup .row {
+  color: var(--hc-theme-text) !important;
+  background-color: var(--hc-theme-surface) !important;
+  border-color: var(--hc-theme-border) !important;
+  opacity: 1 !important;
+}
+
+html[data-help-curupaco-theme] .cannedresponse-popup .crs-code,
+html[data-help-curupaco-theme] .cannedresponse-popup .crs-folder,
+html[data-help-curupaco-theme] .cannedresponse-popup .crs-category-name,
+html[data-help-curupaco-theme] .cannedresponse-popup .canned-response-header .title,
+html[data-help-curupaco-theme] .cannedresponse-popup .empty-state-text {
+  color: var(--hc-theme-text) !important;
+  opacity: 1 !important;
+}
+
+html[data-help-curupaco-theme] .cannedresponse-popup .crs-folder {
+  color: var(--hc-theme-muted) !important;
+}
+
+html[data-help-curupaco-theme] .send-crs-dropdown.cannedresponse-popup,
+html[data-help-curupaco-theme] .send-crs-dropdown.cannedresponse-popup * {
+  color: var(--hc-theme-text) !important;
+  opacity: 1 !important;
+}
+
+html[data-help-curupaco-theme] .send-crs-dropdown.cannedresponse-popup * {
+  background-color: transparent !important;
+}
+
+html[data-help-curupaco-theme] .send-crs-dropdown.cannedresponse-popup {
+  background-color: var(--hc-theme-surface) !important;
+}
+
+html[data-help-curupaco-theme] .send-crs-dropdown.cannedresponse-popup .crs-code-section,
+html[data-help-curupaco-theme] .send-crs-dropdown.cannedresponse-popup .crs-category,
+html[data-help-curupaco-theme] .send-crs-dropdown.cannedresponse-popup .search-field,
+html[data-help-curupaco-theme] .send-crs-dropdown.cannedresponse-popup input {
+  background-color: var(--hc-theme-surface-alt) !important;
+}
+
+html[data-help-curupaco-theme] .send-crs-dropdown.cannedresponse-popup .crs-folder {
+  color: var(--hc-theme-muted) !important;
+}
+
+html[data-help-curupaco-theme] .send-crs-dropdown.cannedresponse-popup .crs-code-section:hover,
+html[data-help-curupaco-theme] .send-crs-dropdown.cannedresponse-popup .crs-category:hover,
+html[data-help-curupaco-theme] .send-crs-dropdown.cannedresponse-popup .crs-code-section:focus,
+html[data-help-curupaco-theme] .send-crs-dropdown.cannedresponse-popup .crs-category:focus {
+  background-color: var(--hc-theme-accent-soft) !important;
+}
+
+html[data-help-curupaco-theme] .cannedresponse-popup .crs-code-section:hover,
+html[data-help-curupaco-theme] .cannedresponse-popup .crs-category:hover,
+html[data-help-curupaco-theme] .cannedresponse-popup .crs-code-section:focus,
+html[data-help-curupaco-theme] .cannedresponse-popup .crs-category:focus {
+  background-color: var(--hc-theme-accent-soft) !important;
+}
+
+html[data-help-curupaco-theme] .cannedresponse-popup input {
+  color: var(--hc-theme-text) !important;
+  background-color: var(--hc-theme-surface-alt) !important;
+  border-color: var(--hc-theme-border) !important;
+  caret-color: var(--hc-theme-text);
+}
+
+html[data-help-curupaco-theme] .crs-code-section,
+html[data-help-curupaco-theme] .crs-code-section * {
+  color: var(--hc-theme-text) !important;
+  background-color: transparent !important;
+  border-color: var(--hc-theme-border) !important;
+  opacity: 1 !important;
+}
+
+html[data-help-curupaco-theme] .crs-code-section {
+  background-color: var(--hc-theme-surface) !important;
+}
+
+html[data-help-curupaco-theme] .crs-code,
+html[data-help-curupaco-theme] .crs-folder {
+  color: var(--hc-theme-text) !important;
+  opacity: 1 !important;
+}
+
+html[data-help-curupaco-theme] .crs-folder {
+  color: var(--hc-theme-muted) !important;
+}
+
+html[data-help-curupaco-theme] .crs-code-section:hover,
+html[data-help-curupaco-theme] .crs-code-section:focus,
+html[data-help-curupaco-theme] .crs-code-section:focus-within {
+  background-color: var(--hc-theme-accent-soft) !important;
+}
+
+html[data-help-curupaco-theme] .crs-code-section:hover *,
+html[data-help-curupaco-theme] .crs-code-section:focus *,
+html[data-help-curupaco-theme] .crs-code-section:focus-within * {
+  background-color: transparent !important;
+}
+
+html[data-help-curupaco-theme] .dropdown-menu:has(.crs-code-section),
+html[data-help-curupaco-theme] [role="listbox"]:has(.crs-code-section),
+html[data-help-curupaco-theme] div:has(> .crs-code-section) {
+  color: var(--hc-theme-text) !important;
+  background-color: var(--hc-theme-surface) !important;
+  border-color: var(--hc-theme-border) !important;
+}
+
+html[data-help-curupaco-theme] .modal-content,
+html[data-help-curupaco-theme] .modal-header,
+html[data-help-curupaco-theme] .modal-body,
+html[data-help-curupaco-theme] .modal-footer {
+  color: var(--hc-theme-text) !important;
+  background-color: var(--hc-theme-surface) !important;
+  border-color: var(--hc-theme-border) !important;
+}
+
+html[data-help-curupaco-theme] .modal .modal-title,
+html[data-help-curupaco-theme] .modal .control-label,
+html[data-help-curupaco-theme] .modal .red-col,
+html[data-help-curupaco-theme] .modal .close,
+html[data-help-curupaco-theme] .modal .close:hover {
+  color: var(--hc-theme-text) !important;
+}
+
+html[data-help-curupaco-theme] .modal .select-label-field,
+html[data-help-curupaco-theme] .modal .select-label-field .ember-power-select-trigger,
+html[data-help-curupaco-theme] .modal .select-label-field .ember-power-select-selected-item {
+  color: var(--hc-theme-text) !important;
+  background-color: var(--hc-theme-surface-alt) !important;
+  border-color: var(--hc-theme-border) !important;
+}
+
+html[data-help-curupaco-theme] .modal .select-label-field input,
+html[data-help-curupaco-theme] .label-select-dd .ember-power-select-search,
+html[data-help-curupaco-theme] .label-select-dd .ember-power-select-search-input {
+  color: var(--hc-theme-text) !important;
+  background-color: var(--hc-theme-surface-alt) !important;
+  border-color: var(--hc-theme-border) !important;
+  caret-color: var(--hc-theme-text);
+}
+
+html[data-help-curupaco-theme] .label-select-dd,
+html[data-help-curupaco-theme] .label-select-dd .ember-power-select-options,
+html[data-help-curupaco-theme] .label-select-dd .ember-power-select-option,
+html[data-help-curupaco-theme] .label-select-dd .ember-power-select-option > span,
+html[data-help-curupaco-theme] .label-select-dd .group-name,
+html[data-help-curupaco-theme] .label-select-dd .child-name {
+  color: var(--hc-theme-text) !important;
+  background-color: var(--hc-theme-surface) !important;
+  border-color: var(--hc-theme-border) !important;
+  opacity: 1 !important;
+}
+
+html[data-help-curupaco-theme] .label-select-dd .ember-power-select-option[aria-disabled="true"],
+html[data-help-curupaco-theme] .label-select-dd .ember-power-select-option[aria-disabled="true"] .group-name {
+  color: var(--hc-theme-muted) !important;
+}
+
+html[data-help-curupaco-theme] .label-select-dd .ember-power-select-option[aria-current="true"],
+html[data-help-curupaco-theme] .label-select-dd .ember-power-select-option[aria-selected="true"],
+html[data-help-curupaco-theme] .label-select-dd .ember-power-select-option:hover {
+  color: var(--hc-theme-text) !important;
+  background-color: var(--hc-theme-accent-soft) !important;
+}
+
+html[data-help-curupaco-theme] .label-select-dd hr {
+  border-color: var(--hc-theme-border) !important;
+}
+
+html[data-help-curupaco-theme] .modal .btn-default {
+  color: var(--hc-theme-text) !important;
+  background-color: var(--hc-theme-surface-alt) !important;
+  border-color: var(--hc-theme-border) !important;
+}
+
+html[data-help-curupaco-theme] .modal .btn-primary {
+  color: var(--hc-theme-button-text, #ffffff) !important;
+  background-color: var(--hc-theme-accent) !important;
+  border-color: var(--hc-theme-accent) !important;
+}
+
+html[data-help-curupaco-theme] body.unifiedDashboards .top-nav-bar,
+html[data-help-curupaco-theme] body.unifiedDashboards .dashboard.unified-dashboard,
+html[data-help-curupaco-theme] body.unifiedDashboards .custom-dashboard-container,
+html[data-help-curupaco-theme] body.unifiedDashboards .custom-dashboard-container-grid,
+html[data-help-curupaco-theme] body.unifiedDashboards .grid-stack,
+html[data-help-curupaco-theme] body.unifiedDashboards .grid-stack-item-content {
+  color: var(--hc-theme-text) !important;
+  background-color: var(--hc-theme-page) !important;
+  border-color: var(--hc-theme-border) !important;
+}
+
+html[data-help-curupaco-theme] body.unifiedDashboards .widget-item,
+html[data-help-curupaco-theme] body.unifiedDashboards .widget-item[class~="tw-bg-white"] {
+  color: var(--hc-theme-text) !important;
+  background-color: var(--hc-theme-surface) !important;
+  border-color: var(--hc-theme-border) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18) !important;
+}
+
+html[data-help-curupaco-theme] body.unifiedDashboards .widget-item :is(
+  .widget-title,
+  .selected-time-interval,
+  [data-test-ticket-status] span,
+  [data-test-ticket-status] a,
+  .highcharts-subtitle,
+  .highcharts-legend-item span,
+  .highcharts-data-label text,
+  .highcharts-axis-labels text
+) {
+  color: var(--hc-theme-text) !important;
+  fill: var(--hc-theme-text) !important;
+  opacity: 1 !important;
+}
+
+html[data-help-curupaco-theme] body.unifiedDashboards .widget-item .fw-text-jungle-800 {
+  color: #1cb697 !important;
+}
+
+html[data-help-curupaco-theme] body.unifiedDashboards .widget-item .fw-text-persimmon-900 {
+  color: #f2797b !important;
+}
+
+html[data-help-curupaco-theme] body.unifiedDashboards .widget-item a {
+  color: var(--hc-theme-accent) !important;
+}
+
+html[data-help-curupaco-theme] body.unifiedDashboards .widget-item .highcharts-container,
+html[data-help-curupaco-theme] body.unifiedDashboards .widget-item .highcharts-root {
+  background-color: transparent !important;
+}
+
+html[data-help-curupaco-theme] body.unifiedDashboards .widget-item .highcharts-background {
+  fill: var(--hc-theme-surface) !important;
+}
+
+html[data-help-curupaco-theme] body.unifiedDashboards .widget-item .highcharts-root text {
+  color: var(--hc-theme-text) !important;
+  fill: var(--hc-theme-text) !important;
+}
+
+html[data-help-curupaco-theme] body.unifiedDashboards .widget-item [class~="tw-bg-white"] {
+  background-color: var(--hc-theme-surface) !important;
+}
+
+html[data-help-curupaco-theme] body.unifiedDashboards .widget-item [class*="fw-text-elephant-"],
+html[data-help-curupaco-theme] body.unifiedDashboards .widget-item [class*="fw-text-smoke-"] {
+  color: var(--hc-theme-text) !important;
 }

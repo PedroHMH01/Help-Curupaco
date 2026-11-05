@@ -2,10 +2,42 @@ let currentStep = 1;
 let currentUrlKey = null;
 let config = cloneDefaultConfig();
 
-document.body.classList.toggle(
-  'embedded',
-  new URLSearchParams(window.location.search).get('embedded') === '1'
-);
+const isEmbedded = new URLSearchParams(window.location.search).get('embedded') === '1';
+document.body.classList.toggle('embedded', isEmbedded);
+
+if (isEmbedded) {
+  const extensionOrigin = new URL(chrome.runtime.getURL('/')).origin;
+  let resizeScheduled = false;
+  const reportFrameHeight = () => {
+    resizeScheduled = false;
+    const height = Math.ceil(Math.max(
+      document.documentElement.scrollHeight,
+      document.body.scrollHeight
+    ));
+    window.parent.postMessage({ type: 'help-curupaco:resize', height }, extensionOrigin);
+  };
+  const scheduleFrameHeight = () => {
+    if (resizeScheduled) return;
+    resizeScheduled = true;
+    requestAnimationFrame(reportFrameHeight);
+  };
+
+  const frameResizeObserver = new ResizeObserver(scheduleFrameHeight);
+  frameResizeObserver.observe(document.documentElement);
+  frameResizeObserver.observe(document.body);
+
+  const frameMutationObserver = new MutationObserver(scheduleFrameHeight);
+  frameMutationObserver.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    characterData: true
+  });
+  window.addEventListener('load', scheduleFrameHeight);
+  document.addEventListener('input', scheduleFrameHeight);
+  document.addEventListener('change', scheduleFrameHeight);
+  scheduleFrameHeight();
+}
 
 // Elementos estáticos do DOM
 const btnNext = document.getElementById('btn-next');
@@ -345,12 +377,24 @@ btnReset.addEventListener('click', () => {
 
 // Inicialização
 loadDataForCurrentUrl();
+applyHelpCurupacoTheme(DEFAULT_THEME);
+
+chrome.storage.local.get(THEME_KEY).then(values => {
+  applyHelpCurupacoTheme(values[THEME_KEY]);
+}).catch(error => {
+  console.error('Erro ao carregar o tema:', error);
+});
 
 chrome.storage.onChanged.addListener((changes, areaName) => {
-  if (areaName !== 'local' || !changes.helpCurupacoConfig) return;
-  config = normalizeConfig(changes.helpCurupacoConfig.newValue);
-  renderEquipmentOptions();
-  renderFieldOptions();
-  generateSummary();
-  saveDataForCurrentUrl();
+  if (areaName !== 'local') return;
+  if (changes[THEME_KEY]) {
+    applyHelpCurupacoTheme(changes[THEME_KEY].newValue);
+  }
+  if (changes.helpCurupacoConfig) {
+    config = normalizeConfig(changes.helpCurupacoConfig.newValue);
+    renderEquipmentOptions();
+    renderFieldOptions();
+    generateSummary();
+    saveDataForCurrentUrl();
+  }
 });

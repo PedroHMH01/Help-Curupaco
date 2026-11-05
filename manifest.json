@@ -29,12 +29,16 @@
   "host_permissions": [
     "https://sistemanextfit.myfreshworks.com/*"
   ],
+  "optional_host_permissions": [
+    "https://*.supabase.co/*"
+  ],
   "content_scripts": [
     {
       "matches": [
         "https://sistemanextfit.myfreshworks.com/*"
       ],
       "js": [
+        "config-defaults.js",
         "freshworks-content.js"
       ],
       "css": [

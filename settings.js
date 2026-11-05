@@ -1,8 +1,11 @@
 const CONFIG_KEY = 'helpCurupacoConfig';
 const ICON_KEY = 'helpCurupacoIcon';
+const OBSERVATIONS_CONFIG_KEY = 'helpCurupacoSupabaseConfig';
+const DEFAULT_SUPABASE_URL = 'https://jvqeqlshhbcpwphcnrpg.supabase.co';
 const STANDARD_CATEGORY = 'standard';
 let config = cloneDefaultConfig();
 let customIcon = null;
+let theme = { ...DEFAULT_THEME };
 
 const categorySelect = document.getElementById('category-select');
 const equipmentSelect = document.getElementById('equipment-select');
@@ -14,6 +17,12 @@ const infoOptionsList = document.getElementById('info-options-list');
 const equipmentEditor = document.getElementById('equipment-editor');
 const standardEditor = document.getElementById('standard-editor');
 const saveStatus = document.getElementById('save-status');
+const themeSelect = document.getElementById('theme-select');
+const themeBackgroundFile = document.getElementById('theme-background-file');
+const themePreview = document.getElementById('theme-preview');
+const supabaseUrlInput = document.getElementById('supabase-url');
+const supabaseAnonKeyInput = document.getElementById('supabase-anon-key');
+const observationsConfigStatus = document.getElementById('observations-config-status');
 
 function selectedCategory() {
   return config.categories.find(category => category.id === categorySelect.value);
@@ -214,6 +223,62 @@ function updateIconPreview(dataUrl) {
   document.getElementById('app-icon').src = preview;
 }
 
+function isPrivilegedSupabaseKey(value) {
+  const key = value.trim();
+  if (/service_role|^sb_secret_/i.test(key)) return true;
+  const payload = key.split('.')[1];
+  if (!payload) return false;
+
+  try {
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const decoded = atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '='));
+    return JSON.parse(decoded).role === 'service_role';
+  } catch {
+    return false;
+  }
+}
+
+document.getElementById('save-observations-config').addEventListener('click', async () => {
+  observationsConfigStatus.textContent = '';
+  try {
+    const projectUrl = new URL(supabaseUrlInput.value.trim());
+    const anonKey = supabaseAnonKeyInput.value.trim();
+    if (
+      projectUrl.protocol !== 'https:' ||
+      !/^[a-z0-9-]+\.supabase\.co$/i.test(projectUrl.hostname) ||
+      projectUrl.pathname !== '/'
+    ) {
+      throw new Error('Informe a URL HTTPS de um projeto Supabase válido.');
+    }
+    if (!anonKey) throw new Error('Informe a chave pública anon/publishable.');
+    if (isPrivilegedSupabaseKey(anonKey)) {
+      throw new Error('Não use service_role ou uma chave secreta. Use a chave pública anon/publishable.');
+    }
+
+    const permissionGranted = await chrome.permissions.request({
+      origins: [`${projectUrl.origin}/*`]
+    });
+    if (!permissionGranted) {
+      throw new Error('Permissão de conexão com o projeto Supabase não concedida.');
+    }
+
+    await chrome.storage.local.set({
+      [OBSERVATIONS_CONFIG_KEY]: {
+        url: projectUrl.origin,
+        anonKey
+      }
+    });
+    supabaseUrlInput.value = projectUrl.origin;
+    supabaseAnonKeyInput.value = anonKey;
+    observationsConfigStatus.textContent = 'Conexão salva. Execute o SQL do projeto e atualize o Freshworks.';
+    observationsConfigStatus.style.color = '#176b38';
+  } catch (error) {
+    console.error('Não foi possível salvar a conexão do Supabase:', error);
+    observationsConfigStatus.textContent = error.message || 'Não foi possível salvar a conexão.';
+    observationsConfigStatus.style.color = '#b42332';
+  }
+});
+
 categorySelect.addEventListener('change', renderEditor);
 equipmentSelect.addEventListener('change', renderEditor);
 
@@ -328,11 +393,96 @@ document.getElementById('remove-icon').addEventListener('click', async () => {
   }
 });
 
+function updateThemePreview() {
+  applyHelpCurupacoTheme(theme);
+  themeSelect.value = theme.preset;
+  themePreview.style.backgroundImage = theme.backgroundImage
+    ? `linear-gradient(var(--background-overlay), var(--background-overlay)), url("${theme.backgroundImage}")`
+    : 'linear-gradient(var(--background-overlay), var(--background-overlay))';
+}
+
+themeSelect.addEventListener('change', async () => {
+  theme = { ...theme, preset: themeSelect.value };
+  updateThemePreview();
+  try {
+    await chrome.storage.local.set({ [THEME_KEY]: theme });
+    showStatus('Tema salvo com sucesso.');
+  } catch (error) {
+    console.error('Erro ao salvar o tema:', error);
+    showStatus('Não foi possível salvar o tema.', true);
+  }
+});
+
+themeBackgroundFile.addEventListener('change', async event => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  try {
+    if (file.type !== 'image/png' || file.size > 2 * 1024 * 1024) {
+      throw new Error('Escolha uma imagem PNG de até 2 MB.');
+    }
+
+    const signature = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+    const pngSignature = [137, 80, 78, 71, 13, 10, 26, 10];
+    if (!pngSignature.every((byte, index) => signature[index] === byte)) {
+      throw new Error('O arquivo selecionado não é um PNG válido.');
+    }
+
+    const reader = new FileReader();
+    const backgroundImage = await new Promise((resolve, reject) => {
+      reader.addEventListener('load', () => resolve(reader.result), { once: true });
+      reader.addEventListener('error', () => reject(new Error('Não foi possível ler o arquivo PNG.')), { once: true });
+      reader.readAsDataURL(file);
+    });
+    if (typeof backgroundImage !== 'string') {
+      throw new Error('Não foi possível carregar o arquivo PNG.');
+    }
+
+    theme = { ...theme, backgroundImage };
+    await chrome.storage.local.set({ [THEME_KEY]: theme });
+    updateThemePreview();
+    showStatus('Fundo PNG salvo com sucesso.');
+  } catch (error) {
+    console.error('Erro ao salvar o fundo PNG:', error);
+    showStatus(error.message || 'Não foi possível salvar o fundo PNG.', true);
+  } finally {
+    event.target.value = '';
+  }
+});
+
+document.getElementById('remove-theme-background').addEventListener('click', async () => {
+  theme = { ...theme, backgroundImage: null };
+  try {
+    await chrome.storage.local.set({ [THEME_KEY]: theme });
+    updateThemePreview();
+    showStatus('Fundo PNG removido.');
+  } catch (error) {
+    console.error('Erro ao remover o fundo PNG:', error);
+    showStatus('Não foi possível remover o fundo PNG.', true);
+  }
+});
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== 'local' || !changes[THEME_KEY]) return;
+  theme = normalizeHelpCurupacoTheme(changes[THEME_KEY].newValue);
+  updateThemePreview();
+});
+
 async function initializeSettings() {
   try {
-    const values = await chrome.storage.local.get([CONFIG_KEY, ICON_KEY]);
+    const values = await chrome.storage.local.get([
+      CONFIG_KEY,
+      ICON_KEY,
+      THEME_KEY,
+      OBSERVATIONS_CONFIG_KEY
+    ]);
     config = normalizeConfig(values[CONFIG_KEY]);
     customIcon = values[ICON_KEY] || null;
+    theme = normalizeHelpCurupacoTheme(values[THEME_KEY]);
+    const supabaseConfig = values[OBSERVATIONS_CONFIG_KEY];
+    supabaseUrlInput.value = supabaseConfig?.url || DEFAULT_SUPABASE_URL;
+    supabaseAnonKeyInput.value = supabaseConfig?.anonKey || '';
+    updateThemePreview();
     updateIconPreview(customIcon);
     renderCategoryOptions();
     showStatus('A extensão está pronta para uso.');
