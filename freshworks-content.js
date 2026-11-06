@@ -2,8 +2,11 @@ const panelId = 'help-curupaco-panel';
 const toggleId = 'help-curupaco-toggle';
 const contentId = 'help-curupaco-content';
 const observationsPanelId = 'help-curupaco-observations-panel';
+const equipmentUtilitiesToolbarId = 'help-curupaco-equipment-utilities-toolbar';
+const equipmentUtilitiesPanelId = 'help-curupaco-equipment-utilities-panel';
 const sidebarSelector = '.user-data.section.slide';
 const observationsConfigKey = 'helpCurupacoSupabaseConfig';
+const controlAccessInstallerUrl = 'https://www.dropbox.com/scl/fi/xajaqw8fqy1nsanyuwma1/ControleAcessoInstaller.exe?rlkey=anzn6t78z67l2u8xkkmeeuqk7&st=vq2yg8ck&dl=1';
 let extensionContextActive = true;
 let urlObserver;
 let sidebarSyncFrame = 0;
@@ -11,6 +14,7 @@ let priorityInboxSortApplied = false;
 let priorityInboxSortMenuOpened = false;
 let observationsConversationId = null;
 let observations = [];
+let lastEquipmentUtilitiesContext = '';
 
 function removeLegacyFreshworksTheme() {
   const root = document.documentElement;
@@ -167,6 +171,181 @@ function isPriorityInboxSortMutation(record) {
     (
       node.matches(`${sortMenuTriggerSelector}, ${priorityOptionSelector}`) ||
       node.querySelector(`${sortMenuTriggerSelector}, ${priorityOptionSelector}`)
+    )
+  ));
+}
+
+function ensureEquipmentUtilitiesButtons() {
+  let toolbar = document.getElementById(equipmentUtilitiesToolbarId);
+  if (!toolbar) {
+    toolbar = document.createElement('nav');
+    toolbar.id = equipmentUtilitiesToolbarId;
+    toolbar.className = 'hc-equipment-utilities-toolbar';
+    toolbar.setAttribute('aria-label', 'Utilitários Help Curupaco');
+  }
+
+  [
+    ['users', 'Usuários'],
+    ['equipment', 'Equipamentos'],
+    ['access', 'Acessar sistema'],
+    ['control-access', 'CA']
+  ].forEach(([action, label]) => {
+    let button = toolbar.querySelector(`[data-action="${action}"]`);
+    if (!button) {
+      button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.action = action;
+      button.textContent = label;
+      if (action === 'control-access') {
+        button.title = 'Copiar o link do Controle de Acesso';
+        button.addEventListener('click', () => copyControlAccessLink(button));
+      } else {
+        button.addEventListener('click', () => openEquipmentUtilities(action));
+      }
+      toolbar.appendChild(button);
+    }
+  });
+
+  const emojiDropdown = document.getElementById('emojiPickerDropDown');
+  if (emojiDropdown?.parentElement) {
+    toolbar.classList.remove('is-floating');
+    emojiDropdown.parentElement.classList.add('hc-equipment-utilities-toolbar-container');
+    if (toolbar.parentElement !== emojiDropdown.parentElement ||
+        toolbar.previousElementSibling !== emojiDropdown) {
+      emojiDropdown.insertAdjacentElement('afterend', toolbar);
+    }
+  } else {
+    toolbar.classList.add('is-floating');
+    toolbar.parentElement?.classList.remove('hc-equipment-utilities-toolbar-container');
+    if (toolbar.parentElement !== document.body) document.body.appendChild(toolbar);
+  }
+}
+
+async function copyControlAccessLink(button) {
+  const originalLabel = button.textContent;
+  try {
+    try {
+      await navigator.clipboard.writeText(controlAccessInstallerUrl);
+    } catch {
+      const input = document.createElement('textarea');
+      input.value = controlAccessInstallerUrl;
+      input.setAttribute('readonly', '');
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      let copied;
+      try {
+        input.select();
+        copied = document.execCommand('copy');
+      } finally {
+        input.remove();
+      }
+      if (!copied) throw new Error('O navegador não permitiu copiar o link.');
+    }
+    button.textContent = 'CA OK';
+    button.title = 'Link do Controle de Acesso copiado';
+  } catch (error) {
+    console.error('Não foi possível copiar o link do Controle de Acesso:', error);
+    button.textContent = 'CA !';
+    button.title = error.message || 'Não foi possível copiar o link.';
+  }
+  window.setTimeout(() => {
+    if (!button.isConnected) return;
+    button.textContent = originalLabel;
+    button.title = 'Copiar o link do Controle de Acesso';
+  }, 2000);
+}
+
+function getCustomerEmailFromConversation() {
+  const customerDetails = document.querySelector(sidebarSelector);
+  if (!customerDetails) return '';
+
+  const mailLink = customerDetails.querySelector('a[href^="mailto:"]');
+  const linkedEmail = mailLink?.getAttribute('href')?.slice(7).split(/[?#]/, 1)[0].trim();
+  if (linkedEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(linkedEmail)) return linkedEmail;
+
+  const match = customerDetails.innerText?.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  return match?.[0] || '';
+}
+
+function openEquipmentUtilities(action) {
+  let panel = document.getElementById(equipmentUtilitiesPanelId);
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = equipmentUtilitiesPanelId;
+    panel.hidden = true;
+    const frame = document.createElement('iframe');
+    frame.title = 'Utilitários de equipamentos Next Fit';
+    panel.appendChild(frame);
+    document.body.appendChild(panel);
+  }
+
+  const frame = panel.querySelector('iframe');
+  const extensionPage = getExtensionUrl('equipment-utilities.html');
+  if (!extensionPage) return;
+
+  panel.hidden = false;
+  const email = getCustomerEmailFromConversation();
+  const conversationId = getCurrentConversationId() || location.pathname;
+  lastEquipmentUtilitiesContext = JSON.stringify({ email, conversationId });
+  if (!frame.src) {
+    const params = new URLSearchParams({ action });
+    if (email) params.set('clientEmail', email);
+    if (conversationId) params.set('conversationId', conversationId);
+    frame.src = `${extensionPage}?${params.toString()}`;
+    return;
+  }
+  frame.contentWindow.postMessage({
+    type: 'help-curupaco:utilities:action',
+    action,
+    clientEmail: email,
+    conversationId
+  }, new URL(extensionPage).origin);
+}
+
+function notifyEquipmentUtilitiesContext() {
+  const panel = document.getElementById(equipmentUtilitiesPanelId);
+  const frame = panel?.querySelector('iframe');
+  const extensionPage = getExtensionUrl('equipment-utilities.html');
+  if (!frame?.src || !extensionPage) return;
+
+  const context = {
+    clientEmail: getCustomerEmailFromConversation(),
+    conversationId: getCurrentConversationId() || location.pathname
+  };
+  const contextKey = JSON.stringify({
+    email: context.clientEmail,
+    conversationId: context.conversationId
+  });
+  if (contextKey === lastEquipmentUtilitiesContext) return;
+  lastEquipmentUtilitiesContext = contextKey;
+  frame.contentWindow.postMessage({
+    type: 'help-curupaco:utilities:context',
+    ...context
+  }, new URL(extensionPage).origin);
+}
+
+window.addEventListener('message', event => {
+  const panel = document.getElementById(equipmentUtilitiesPanelId);
+  const extensionPage = getExtensionUrl('/');
+  if (
+    !panel ||
+    !extensionPage ||
+    event.source !== panel.querySelector('iframe')?.contentWindow ||
+    event.origin !== new URL(extensionPage).origin ||
+    event.data?.type !== 'help-curupaco:utilities:close'
+  ) {
+    return;
+  }
+  panel.hidden = true;
+});
+
+function containsEmojiDropdownNode(nodes) {
+  return [...nodes].some(node => (
+    node.nodeType === Node.ELEMENT_NODE &&
+    (
+      node.matches('#emojiPickerDropDown') ||
+      node.querySelector('#emojiPickerDropDown')
     )
   ));
 }
@@ -607,10 +786,12 @@ let observedUrl = location.href;
 function syncSidebarAndNavigation() {
   sidebarSyncFrame = 0;
   if (!isExtensionContextActive()) return;
+  ensureEquipmentUtilitiesButtons();
   selectPriorityInboxSort();
   const panel = getPanel();
   if (!panel) return;
   updatePanelPlacement(panel);
+  notifyEquipmentUtilitiesContext();
   const observationsPanel = getObservationsPanel();
   updateObservationsPanelPlacement(observationsPanel);
   if (observedUrl === location.href) return;
@@ -644,7 +825,16 @@ function containsSidebarNode(nodes) {
 }
 
 function isSidebarMutation(record, sidebar) {
-  if (record.target === sidebar) return true;
+  if (
+    sidebar &&
+    (record.target === sidebar || sidebar.contains(record.target)) &&
+    (
+      ['childList', 'characterData'].includes(record.type) ||
+      (record.type === 'attributes' && record.attributeName === 'href')
+    )
+  ) {
+    return true;
+  }
   const isSidebarParentChange = sidebar && record.target === sidebar.parentElement;
   const isDocumentRootChange =
     record.target === document.documentElement || record.target === document.body;
@@ -656,11 +846,25 @@ function isSidebarMutation(record, sidebar) {
 urlObserver = new MutationObserver(records => {
   const navigationChanged = observedUrl !== location.href;
   if (navigationChanged) {
+    ensureEquipmentUtilitiesButtons();
     selectPriorityInboxSort();
     scheduleSidebarSync();
     return;
   }
 
+  const emojiDropdown = document.getElementById('emojiPickerDropDown');
+  if (records.some(record => (
+    record.target === emojiDropdown ||
+    containsEmojiDropdownNode(record.addedNodes) ||
+    containsEmojiDropdownNode(record.removedNodes) ||
+    [...record.removedNodes].some(node => (
+      node.nodeType === Node.ELEMENT_NODE &&
+      (node.id === equipmentUtilitiesToolbarId ||
+        node.querySelector(`#${equipmentUtilitiesToolbarId}`))
+    ))
+  ))) {
+    ensureEquipmentUtilitiesButtons();
+  }
   if (records.some(isPriorityInboxSortMutation)) {
     selectPriorityInboxSort();
   }
@@ -679,9 +883,11 @@ urlObserver = new MutationObserver(records => {
 urlObserver.observe(document.documentElement, {
   childList: true,
   subtree: true,
+  characterData: true,
   attributes: true,
-  attributeFilter: ['aria-expanded']
+  attributeFilter: ['aria-expanded', 'href']
 });
+ensureEquipmentUtilitiesButtons();
 selectPriorityInboxSort();
 function handleUrlNavigation() {
   scheduleSidebarSync();

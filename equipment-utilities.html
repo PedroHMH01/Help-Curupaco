@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Utilitários Next Fit</title>
+  <link rel="stylesheet" href="equipment-utilities.css">
+</head>
+<body>
+  <main id="app" class="app" aria-live="polite">
+    <header class="app-header">
+      <button id="close" class="icon-button" type="button" aria-label="Fechar">×</button>
+    </header>
+    <div id="status" class="status" role="status" hidden></div>
+    <section id="login-view" class="card" hidden>
+      <h2>Entrar</h2>
+      <p class="muted">As credenciais ficam salvas neste perfil do navegador para facilitar os próximos acessos.</p>
+      <form id="login-form" class="form-grid">
+        <label>E-mail do agente<input name="email" type="email" autocomplete="username" required></label>
+        <label>Senha<input name="password" type="password" autocomplete="current-password" required></label>
+        <label>Código de acesso<input name="code" type="password" autocomplete="off" required></label>
+        <button class="primary" type="submit">Conectar</button>
+      </form>
+    </section>
+    <section id="workspace-view" hidden>
+      <div class="card">
+        <form id="search-form" class="inline-form">
+          <label class="grow">E-mail do cliente<input id="client-email" type="email" required></label>
+          <button class="primary" type="submit">Buscar</button>
+        </form>
+        <div id="matches" class="matches"></div>
+      </div>
+      <section id="selected-view" class="card" hidden>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">BASE SELECIONADA</p>
+            <h2 id="selected-name"></h2>
+            <p id="selected-meta" class="muted"></p>
+          </div>
+          <button id="change-client" class="secondary" type="button">Trocar base</button>
+        </div>
+        <nav class="utility-actions" aria-label="Ações da base">
+          <button id="open-user" class="secondary" type="button">Usuários</button>
+          <button id="open-equipment" class="secondary" type="button">Equipamentos</button>
+          <button id="access-system" class="primary" type="button">Acessar sistema</button>
+        </nav>
+      </section>
+      <section id="user-view" class="card" hidden>
+        <div class="section-heading">
+          <h2>Usuários</h2>
+          <button id="reload-users" class="secondary" type="button">Atualizar</button>
+        </div>
+        <div id="user-list" class="record-list"></div>
+        <div class="actions">
+          <button id="show-user-form" class="primary" type="button">Criar usuário</button>
+        </div>
+        <div id="user-creation-choice" class="user-creation-choice" hidden>
+          <p>Deseja vincular o nome do usuário a um equipamento?</p>
+          <div class="utility-actions">
+            <button id="create-standard-user" class="secondary" type="button">Criar usuário padrão</button>
+            <button id="create-linked-user" class="primary" type="button">Vincular a equipamento</button>
+          </div>
+        </div>
+        <form id="user-form" class="form-grid editor-form" hidden>
+          <h3>Criar usuário de catraca</h3>
+          <p class="muted">Será criado com perfil Instrutor e vinculado à unidade selecionada.</p>
+          <label id="user-equipment-label" hidden>Equipamento
+            <select id="user-equipment" name="equipmentId"></select>
+          </label>
+          <label>Nome do usuário<input id="user-name" name="name" value="Controle de acesso (Não alterar)" readonly required maxlength="120"></label>
+          <label>E-mail do usuário<input name="email" type="email" required maxlength="180"></label>
+          <div class="actions">
+            <button id="cancel-user-form" class="secondary" type="button">Cancelar</button>
+            <button class="primary" type="submit">Revisar e confirmar</button>
+          </div>
+        </form>
+        <section id="created-user-credentials" class="created-credentials" aria-live="polite" hidden>
+          <h3>Usuário criado</h3>
+          <p class="muted">Copie e guarde a senha. Ela não será salva pela extensão.</p>
+          <label>Nome<input id="created-user-name" readonly></label>
+          <label>E-mail<input id="created-user-email" readonly></label>
+          <div class="credential-password">
+            <label for="created-user-password">Senha gerada</label>
+            <div class="credential-copy-row">
+              <input id="created-user-password" type="text" readonly>
+              <button id="copy-user-password" class="primary" type="button">Copiar senha</button>
+            </div>
+          </div>
+          <p id="credential-copy-status" class="muted" role="status"></p>
+        </section>
+      </section>
+      <section id="equipment-view" class="card" hidden>
+        <div class="section-heading">
+          <h2>Equipamentos</h2>
+          <button id="reload-equipment" class="secondary" type="button">Atualizar</button>
+        </div>
+        <div id="equipment-list" class="record-list"></div>
+        <div class="actions">
+          <button id="show-equipment-form" class="primary" type="button">Criar equipamento</button>
+        </div>
+        <form id="equipment-edit-form" class="form-grid editor-form" hidden>
+          <h3>Editar equipamento</h3>
+          <label>Descrição<input id="edit-equipment-description" maxlength="200" required></label>
+          <label>Configuração do modelo (JSON)
+            <textarea id="edit-equipment-configuration" rows="9" spellcheck="false" required></textarea>
+          </label>
+          <p class="muted">As senhas de acesso físico ficam visíveis nesta configuração. Tokens e segredos continuam ocultos.</p>
+          <div class="actions">
+            <button id="cancel-equipment-edit" class="secondary" type="button">Cancelar</button>
+            <button class="primary" type="submit">Revisar e salvar</button>
+          </div>
+        </form>
+        <form id="equipment-form" class="form-grid editor-form" hidden>
+          <h3>Criar equipamento</h3>
+          <label>Tipo
+            <select id="equipment-type" required>
+              <option value="">Selecione</option>
+              <option value="catraca">Catraca</option>
+              <option value="biometric">Leitor biométrico</option>
+              <option value="facial">Reconhecimento facial</option>
+              <option value="printer">Impressora</option>
+            </select>
+          </label>
+          <label id="model-label" hidden>Modelo<select id="equipment-model"></select></label>
+          <div id="equipment-fields" class="form-grid"></div>
+          <div class="actions">
+            <button id="cancel-equipment-form" class="secondary" type="button">Cancelar</button>
+            <button class="primary" type="submit">Revisar e confirmar</button>
+          </div>
+        </form>
+      </section>
+    </section>
+  </main>
+  <script src="equipment-utilities.js"></script>
+</body>
+</html>

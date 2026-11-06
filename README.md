@@ -38,6 +38,18 @@ O nome do agente é informativo e vem da interface do Freshworks; não é uma id
 
 No Freshworks compatível, a extensão tenta selecionar automaticamente a ordenação **Tempo de espera mais longo (Caixa de entrada prioritária)** quando o menu correspondente aparece. A disponibilidade e o rótulo podem variar conforme mudanças do próprio Freshworks.
 
+### Utilitários de equipamentos
+
+Os botões **Usuários**, **Equipamentos** e **Acessar sistema** ficam disponíveis no chat do Freshworks, próximos aos controles da mensagem ou em uma barra flutuante quando o Freshworks não expõe o seletor de emoji esperado. A extensão se conecta diretamente às APIs oficiais da Next Fit; não usa o portal hospedado nem um backend/Vercel intermediário.
+
+1. Entre com seu e-mail, senha e código de acesso individuais. Na primeira conexão, permita o acesso da extensão aos domínios da API Next Fit.
+2. O e-mail do cliente é lido dos detalhes do contato e as bases são pesquisadas automaticamente ao abrir os utilitários e ao mudar de conversa. Se o Freshworks não exibir o e-mail, informe-o no campo para pesquisar manualmente.
+3. Escolha o cadastro/unidade correto para carregar os equipamentos ativos.
+4. **Usuários** lista os usuários ativos. Ao criar, escolha um usuário padrão, com o nome `Controle de acesso (Não alterar)`, ou vincule o nome a um equipamento, usando `Controle de acesso (Não alterar) <nome do equipamento>`. Após a criação, a senha aleatória aparece na tela e pode ser copiada; ela não é armazenada. **Equipamentos** lista os equipamentos ativos e permite criar, editar descrição/configuração e inativar um equipamento. As operações de criação, edição e remoção exigem confirmação.
+5. **Acessar sistema** copia o link gerado para a base selecionada e tenta abri-lo em uma janela anônima. Para isso, habilite **Permitir no modo anônimo** em `chrome://extensions` → Help Curupaco → **Detalhes**. O botão **CA** na barra do chat copia o link do instalador do Controle de Acesso. Fluxos de criação com mais de uma gravação são identificados; uma falha posterior pode deixar a primeira etapa já registrada.
+
+E-mail, senha e código de acesso do agente são guardados no armazenamento local da extensão para continuar preenchidos após recarregar a página. Esses dados ficam no perfil do navegador e não são criptografados pela extensão; proteja o acesso ao perfil. Tokens de agente e dados temporários da unidade ficam em armazenamento de sessão e são apagados ao encerrar a sessão do navegador. A extensão também exige uma nova conexão no primeiro uso após a mudança do dia local, mesmo que o navegador continue aberto; as credenciais salvas apenas preenchem o formulário e não fazem login automaticamente. Os formulários preenchem os padrões usados pelo portal para iD Block Enterprise, iD Block Modo Pro e iDFace (`admin`/`admin`), Tecnibra TCA IHM (`123456`) e usuário Intelbras (`admin`). O usuário pode conferir e alterar os valores antes de confirmar; senhas que não têm padrão preenchido no portal continuam exigindo preenchimento manual. Senhas dos equipamentos físicos ficam visíveis nos campos e na confirmação para facilitar o acesso local, mas não são guardadas pela extensão; elas só são enviadas à Next Fit durante a operação confirmada. Nenhuma operação de gravação é feita durante a busca ou ao apenas selecionar uma base, exceto o registro de acesso de suporte.
+
 ### Personalização
 
 Nas opções da extensão é possível:
@@ -102,6 +114,9 @@ As políticas do banco permitem consulta e inclusão para o domínio fixado no S
 | Tema, imagem de fundo e ícone | Armazenamento local do navegador | Aplicável apenas àquele perfil |
 | URL e chave pública do Supabase | Armazenamento local do navegador | Configurar nos demais perfis que usarão as observações |
 | Observações enviadas | Projeto Supabase configurado | Compartilhadas conforme as permissões e políticas desse projeto |
+| E-mail do agente Next Fit | Armazenamento local do navegador | Apenas neste perfil de navegador |
+| Credenciais do agente Next Fit | Armazenamento local da extensão | Neste perfil do navegador; não criptografadas pela extensão |
+| Tokens Next Fit e dados temporários da unidade | Armazenamento de sessão da extensão | Durante a sessão do navegador e até a mudança do dia local |
 
 ## Solução de problemas
 

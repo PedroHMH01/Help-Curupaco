@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Help Curupaco",
-  "version": "2.5",
+  "version": "2.7",
   "description": "Suporte a Equipamentos - Gerador de Repasse com memória por URL",
   "icons": {
     "16": "icon16.png",
@@ -24,13 +24,16 @@
   },
   "permissions": [
     "storage",
-    "clipboardWrite"
+    "clipboardWrite",
+    "windows"
   ],
   "host_permissions": [
     "https://sistemanextfit.myfreshworks.com/*"
   ],
   "optional_host_permissions": [
-    "https://*.supabase.co/*"
+    "https://*.supabase.co/*",
+    "https://apiadm.nextfit.com.br/*",
+    "https://api.nextfit.com.br/*"
   ],
   "content_scripts": [
     {
@@ -53,7 +56,10 @@
         "popup.html",
         "poptup.js",
         "config-defaults.js",
-        "icon.png"
+        "icon.png",
+        "equipment-utilities.html",
+        "equipment-utilities.css",
+        "equipment-utilities.js"
       ],
       "matches": [
         "https://sistemanextfit.myfreshworks.com/*"
