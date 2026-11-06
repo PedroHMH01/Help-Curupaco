@@ -89,8 +89,8 @@ const FIELD_CONFIG = {
     ],
     'Tecnibra TCA IHM': [
       ['communication', 'Comunicação', 'select', 'tcpip', [['tcpip', 'TCP/IP'], ['serial', 'Serial']]],
-      ['ip', 'IP da catraca (TCP/IP)', 'text', ''],
-      ['serialPort', 'Porta serial', 'text', ''],
+      ['ip', 'IP da catraca (TCP/IP)', 'text', '', null, false],
+      ['serialPort', 'Porta serial', 'text', '', null, false],
       ['direction', 'Sentido da catraca', 'select', 'horario', [['horario', 'Horário'], ['anti-horario', 'Anti-horário']]],
       ['turn', 'Giro', 'select', 'entrada', [['entrada', 'Entrada'], ['entrada-saida', 'Entrada e saída']]],
       ['keyboard', 'Utiliza teclado', 'checkbox', false],
@@ -99,9 +99,15 @@ const FIELD_CONFIG = {
     ]
   },
   biometric: {
-    'Digital Persona V2': [],
-    Futronic: [],
-    'Hamster DX': []
+    'Digital Persona V2': [
+      ['description', 'Descrição do equipamento', 'text', 'Digital Persona V2']
+    ],
+    Futronic: [
+      ['description', 'Descrição do equipamento', 'text', 'Futronic']
+    ],
+    'Hamster DX': [
+      ['description', 'Descrição do equipamento', 'text', 'Hamster DX']
+    ]
   },
   facial: {
     Hikvision: [
@@ -195,7 +201,7 @@ async function send(messageType, data = {}) {
   return response.data;
 }
 
-function inputElement([name, label, type, defaultValue, options]) {
+function inputElement([name, label, type, defaultValue, options, required = true]) {
   const wrapper = document.createElement('label');
   if (type === 'checkbox') {
     wrapper.className = 'checkbox-label';
@@ -209,6 +215,7 @@ function inputElement([name, label, type, defaultValue, options]) {
   wrapper.append(document.createTextNode(label));
   const input = document.createElement(type === 'select' ? 'select' : 'input');
   input.name = name;
+  input.required = type !== 'checkbox' && required;
   if (type === 'select') {
     for (const [value, text] of options || []) {
       const option = document.createElement('option');
@@ -218,9 +225,8 @@ function inputElement([name, label, type, defaultValue, options]) {
     }
     input.value = defaultValue;
   } else {
-    input.type = type === 'password' ? 'text' : type;
+    input.type = type;
     input.value = defaultValue;
-    input.required = type !== 'password' || Boolean(defaultValue);
     if (type === 'number') input.min = '1';
   }
   wrapper.appendChild(input);
@@ -383,13 +389,13 @@ function buildEquipmentPlan(type, model, values) {
     }
   } else if (type === 'biometric') {
     if (model === 'Digital Persona V2') {
-      description = model;
+      description = values.description;
       payload = basePayload(description, 2, 'DigitalPersonaUAreU', 2, { Driver: 2 });
     } else if (model === 'Futronic') {
-      description = model;
+      description = values.description;
       payload = basePayload(description, 2, 'FS80H', 1, { UtilizaImpressaoTreino: false });
     } else {
-      description = 'Hamster DX';
+      description = values.description;
       payload = basePayload(description, 2, 'HamsterDx', 3, { UtilizaImpressaoTreino: false });
     }
   } else if (type === 'printer') {
@@ -783,7 +789,8 @@ function currentFormTitle(type, model) {
 function equipmentValuesSummary(type, model, values) {
   return (FIELD_CONFIG[type][model] || []).map(([name, label, fieldType]) => {
     let value = values[name];
-    if (fieldType === 'checkbox') value = value ? 'Sim' : 'Não';
+    if (fieldType === 'password' && value) value = '********';
+    else if (fieldType === 'checkbox') value = value ? 'Sim' : 'Não';
     return `${label}: ${value || '—'}`;
   }).join('\n');
 }

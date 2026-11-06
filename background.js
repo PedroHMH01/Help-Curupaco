@@ -303,9 +303,24 @@ async function requestAgentApi(url, options = {}) {
 
 async function requestSupportApi(url, options = {}) {
   const stored = await chrome.storage.session.get(NEXTFIT_SUPPORT_KEY);
-  const support = stored[NEXTFIT_SUPPORT_KEY];
-  if (!support?.accessToken || !support?.unitCode) {
+  let support = stored[NEXTFIT_SUPPORT_KEY];
+  if (!support?.unitCode) {
     throw new Error('Selecione uma base para iniciar o acesso de suporte.');
+  }
+  if (!support.accessToken) {
+    const cadastroId = Number(support.cadastroId);
+    let masterUserId = Number(support.masterUserId);
+    if (!Number.isSafeInteger(cadastroId) || cadastroId <= 0) {
+      throw new Error('Selecione novamente a base antes de consultar os equipamentos.');
+    }
+    if (!Number.isSafeInteger(masterUserId) || masterUserId <= 0) {
+      const users = await getNextfitUsers(cadastroId);
+      masterUserId = Number(selectSupportMaster(users)?.Id);
+      if (!Number.isSafeInteger(masterUserId) || masterUserId <= 0) {
+        throw new Error('Não há usuário ativo na base para iniciar o acesso de suporte.');
+      }
+    }
+    support = await renewSupportAccess({ ...support, cadastroId, masterUserId });
   }
   const init = {
     ...options,
@@ -326,25 +341,51 @@ async function requestSupportApi(url, options = {}) {
   return response;
 }
 
-async function renewSupportAccess(support) {
-  const agentToken = await getAgentAccessToken();
-  const response = await fetch(`${NEXTFIT_ADM_API}/Cadastro/AcessarPorUsuario`, {
+async function createNextfitSupportAccess(support) {
+  const agentSession = await getNextfitSession();
+  const description = `Acesso pela ferramenta do painel de equipamentos${agentSession?.email ? `\nRealizado por: ${agentSession.email}` : ''}`;
+  const response = await requestAgentApi(`${NEXTFIT_ADM_API}/AcessoSuporte`, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${agentToken}`,
-      'Content-Type': 'application/json'
-    },
+    unitCode: support.unitCode,
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      Codigo: support.cadastroId,
-      CodigoUsuario: support.masterUserId
+      CodigoCadastro: support.cadastroId,
+      CodigoUsuario: support.masterUserId,
+      Ticket: null,
+      Categoria: 3,
+      Descricao: description
     })
   });
-  const result = await nextfitJson(response, 'Não foi possível renovar o acesso de suporte');
-  const accessToken = result?.Content?.access_token;
-  if (!accessToken) throw new Error('A Next Fit não retornou um novo acesso de suporte.');
-  const renewed = { ...support, accessToken };
+  const result = await nextfitJson(response, 'Não foi possível registrar o acesso de suporte');
+  const access = apiContent(result, 'A Next Fit não confirmou o registro do acesso de suporte.');
+  if (!access?.CodigoCurto) throw new Error('A Next Fit não retornou o código do acesso de suporte.');
+  return access;
+}
+
+async function redeemNextfitSupportAccess(support, accessCode) {
+  const response = await fetch(`${NEXTFIT_API}/token/AcessoSuporte/Resgatar`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'codigo-unidade': String(support.unitCode),
+      'front-version': '1.1.5'
+    },
+    body: JSON.stringify({ Codigo: accessCode, Plataforma: 1 })
+  });
+  const tokens = await nextfitJson(response, 'Não foi possível resgatar o acesso de suporte');
+  if (!tokens?.access_token) throw new Error('A Next Fit não retornou o token do acesso de suporte.');
+  const renewed = {
+    ...support,
+    accessCode,
+    accessToken: tokens.access_token
+  };
   await chrome.storage.session.set({ [NEXTFIT_SUPPORT_KEY]: renewed });
   return renewed;
+}
+
+async function renewSupportAccess(support) {
+  const access = await createNextfitSupportAccess(support);
+  return redeemNextfitSupportAccess(support, access.CodigoCurto);
 }
 
 function apiContent(result, message) {
@@ -414,7 +455,7 @@ function selectSupportMaster(users) {
     null;
 }
 
-async function selectNextfitBase(cadastro, conversationId) {
+async function startNextfitSupportSession(cadastro, conversationId) {
   const cadastroId = Number(cadastro?.Id);
   const unitCode = Number(cadastro?.CodigoUnidade);
   if (!Number.isSafeInteger(cadastroId) || cadastroId <= 0 ||
@@ -426,26 +467,7 @@ async function selectNextfitBase(cadastro, conversationId) {
   const users = await getNextfitUsers(cadastroId);
   const master = selectSupportMaster(users);
   if (!master?.Id) throw new Error('Não há usuário ativo na base para registrar o acesso de suporte.');
-  const agentSession = await getNextfitSession();
-  const description = `Acesso pela ferramenta do painel de equipamentos${agentSession?.email ? `\nRealizado por: ${agentSession.email}` : ''}`;
-  const supportBody = {
-    CodigoCadastro: cadastroId,
-    CodigoUsuario: master.Id,
-    Ticket: null,
-    Categoria: 3,
-    Descricao: description
-  };
-  const accessResponse = await requestAgentApi(`${NEXTFIT_ADM_API}/AcessoSuporte`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(supportBody)
-  });
-  const accessResult = await nextfitJson(accessResponse, 'Não foi possível registrar o acesso de suporte');
-  const access = apiContent(accessResult, 'A Next Fit não confirmou o registro do acesso de suporte.');
-  if (!access?.CodigoCurto) throw new Error('A Next Fit não retornou o código do acesso de suporte.');
-
   const support = {
-    accessCode: access.CodigoCurto,
     cadastroId,
     unitCode,
     masterUserId: master.Id,
@@ -465,14 +487,19 @@ async function selectNextfitBase(cadastro, conversationId) {
   };
 }
 
+async function selectNextfitBase(cadastro, conversationId) {
+  return startNextfitSupportSession(cadastro, conversationId);
+}
+
 async function getNextfitSupportUrl() {
   const stored = await chrome.storage.session.get(NEXTFIT_SUPPORT_KEY);
   const support = stored[NEXTFIT_SUPPORT_KEY];
-  if (!support?.accessCode || !support?.unitCode) {
+  if (!support?.unitCode || !support?.cadastroId || !support?.masterUserId) {
     throw new Error('Selecione uma base antes de acessar o sistema.');
   }
+  const access = await createNextfitSupportAccess(support);
   const url = new URL('https://app.nextfit.com.br/acesso-suporte');
-  url.searchParams.set('codigo', support.accessCode);
+  url.searchParams.set('codigo', access.CodigoCurto);
   url.searchParams.set('codigoUnidade', String(support.unitCode));
   return url.toString();
 }
@@ -494,12 +521,13 @@ async function listNextfitEquipment() {
   if (!Number.isSafeInteger(unitCode) || unitCode <= 0) {
     throw new Error('Selecione uma unidade válida antes de consultar os equipamentos.');
   }
+
   const query = new URLSearchParams({
     filter: JSON.stringify([{ property: 'Inativo', operator: 'equal', value: false, and: true }]),
     includes: JSON.stringify(NEXTFIT_EQUIPMENT_INCLUDES),
     page: '1'
   });
-  const response = await requestAgentApi(`${NEXTFIT_API}/equipamento?${query}`, { unitCode });
+  const response = await requestSupportApi(`${NEXTFIT_API}/equipamento?${query}`);
   const result = await nextfitJson(response, 'Não foi possível carregar os equipamentos');
   const equipment = apiContent(result, 'A Next Fit não retornou os equipamentos.');
   if (!Array.isArray(equipment)) throw new Error('A Next Fit retornou uma lista de equipamentos inválida.');
