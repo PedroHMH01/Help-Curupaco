@@ -294,7 +294,7 @@ function buildEquipmentPlan(type, model, values) {
     switch (model) {
       case 'Fake':
         description = values.description;
-        payload = basePayload(description, 1, 'Fake', 20, { Giro: 2, QuantidadeDigitos: Number(values.digits) });
+        payload = basePayload(description, 1, 'Fake', 20, { Giro: 2, QuantidadeDigitos: values.digits });
         break;
       case 'TopData':
         description = `${values.readerType === 'wiegand' ? 'TopData c/facial' : 'TopData'} v: ${values.version} Servidor: ${values.serverIp} Inner: ${values.innerIp}`;
@@ -521,7 +521,7 @@ function renderMatches(bases) {
   }
 }
 
-async function searchBasesByEmail(email, { automatic = false } = {}) {
+async function searchBasesByEmail(email, { automatic = false, selectUniqueBase = false } = {}) {
   const normalizedEmail = email.trim();
   const requestId = ++baseSearchSequence;
   matchesElement.replaceChildren();
@@ -540,9 +540,13 @@ async function searchBasesByEmail(email, { automatic = false } = {}) {
     const bases = await send('base:search', { email: normalizedEmail });
     if (requestId !== baseSearchSequence) return;
     renderMatches(bases);
+    if (selectUniqueBase && bases.length === 1) {
+      await selectBase(bases[0]);
+      return;
+    }
     showStatus(
       bases.length
-        ? `${bases.length} cadastro(s) encontrado(s) para ${normalizedEmail}. Selecione a base correta.`
+        ? `${bases.length} cadastro(s) encontrado(s) para ${normalizedEmail}.${selectUniqueBase ? ' Se houver mais de um, selecione a base correta para carregar os equipamentos.' : ' Selecione a base correta.'}`
         : `Nenhum cadastro encontrado para ${normalizedEmail}.`,
       bases.length ? 'success' : ''
     );
@@ -638,7 +642,13 @@ async function selectBase(base) {
     renderEquipment(currentEquipment);
     renderUsers(currentUsers);
     clearStatus();
-    if (currentAction) await activateAction(currentAction);
+    if (currentAction === 'users') {
+      userView.hidden = false;
+    } else if (currentAction === 'equipment') {
+      equipmentView.hidden = false;
+    } else if (currentAction) {
+      await activateAction(currentAction);
+    }
   } catch (error) {
     showStatus(error.message, 'error');
   }
@@ -858,6 +868,7 @@ document.getElementById('search-form').addEventListener('submit', async event =>
 
 document.getElementById('change-client').addEventListener('click', () => {
   selectedBase = null;
+  currentAction = '';
   currentEquipment = [];
   currentUsers = [];
   selectedView.hidden = true;
@@ -1111,7 +1122,7 @@ document.getElementById('equipment-form').addEventListener('submit', async event
     );
     if (!confirmed) return;
     setBusy(form, true, 'Criando…');
-    await send('equipment:create', { type, model, posts: plan.posts });
+    await send('equipment:create', { equipmentType: type, model, posts: plan.posts });
     form.hidden = true;
     showStatus(`${currentFormTitle(type, model)} criado com sucesso. Atualizando a lista…`, 'success');
     try {
@@ -1181,7 +1192,10 @@ window.addEventListener('message', event => {
     document.getElementById('equipment-form').hidden = true;
     document.getElementById('equipment-edit-form').hidden = true;
     if (customerEmailFromFreshworks && !workspaceView.hidden) {
-      searchBasesByEmail(customerEmailFromFreshworks, { automatic: true });
+      searchBasesByEmail(customerEmailFromFreshworks, {
+        automatic: true,
+        selectUniqueBase: currentAction === 'equipment'
+      });
     } else if (workspaceView.hidden) {
       showStatus('A conversa mudou. A pesquisa será feita assim que você conectar.');
     } else {

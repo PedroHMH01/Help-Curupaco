@@ -213,11 +213,17 @@
     .btn-copy {
       background-color: #28a745;
       width: 100%;
-      margin-top: 6px;
     }
 
     .btn-copy:hover {
       background-color: #218838;
+    }
+
+    .summary-copy-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+      margin-bottom: 6px;
     }
 
     .btn-reset {
@@ -341,9 +347,12 @@
 
   <!-- Bloco de Texto Final -->
   <div class="summary-section">
+    <div class="summary-copy-actions">
+      <button id="btn-copy" class="btn-copy">Copiar Repasse</button>
+      <button id="btn-copy-finalization" class="btn-copy">Copiar finalização</button>
+    </div>
     <label for="output-text">Texto do repasse (editável):</label>
     <textarea id="output-text" aria-label="Texto do repasse, editável"></textarea>
-    <button id="btn-copy" class="btn-copy">Copiar Repasse</button>
     <button id="btn-reset" class="btn-reset">Limpar Dados</button>
   </div>
 

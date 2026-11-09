@@ -43,6 +43,7 @@ if (isEmbedded) {
 const btnNext = document.getElementById('btn-next');
 const btnPrev = document.getElementById('btn-prev');
 const btnCopy = document.getElementById('btn-copy');
+const btnCopyFinalization = document.getElementById('btn-copy-finalization');
 const btnReset = document.getElementById('btn-reset');
 const outputText = document.getElementById('output-text');
 
@@ -341,6 +342,15 @@ async function copyTextToClipboard(text) {
   }
 }
 
+function finalizationText(text) {
+  const content = text
+    .split(/\r?\n/)
+    .filter(line => !['CLEAR - REPASSE', '@REPASSE RESUMO'].includes(line.trim()))
+    .join('\n')
+    .trim();
+  return `@RESUMO FINALIZAÇÃO${content ? `\n\n${content}` : ''}`;
+}
+
 // Botão Copiar
 btnCopy.addEventListener('click', async () => {
   const originalText = btnCopy.innerText;
@@ -352,6 +362,18 @@ btnCopy.addEventListener('click', async () => {
     btnCopy.innerText = 'Falha ao copiar';
   }
   setTimeout(() => { btnCopy.innerText = originalText; }, 1500);
+});
+
+btnCopyFinalization.addEventListener('click', async () => {
+  const originalText = btnCopyFinalization.innerText;
+  try {
+    await copyTextToClipboard(finalizationText(outputText.value));
+    btnCopyFinalization.innerText = 'Finalização copiada!';
+  } catch (error) {
+    console.error('Erro ao copiar a finalização:', error);
+    btnCopyFinalization.innerText = 'Falha ao copiar';
+  }
+  setTimeout(() => { btnCopyFinalization.innerText = originalText; }, 1500);
 });
 
 // Botão Limpar

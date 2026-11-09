@@ -746,8 +746,9 @@ function assertEquipmentPayloadModel(payload, metadata) {
 }
 
 function validateEquipmentPlan(message) {
-  if (!['catraca', 'biometric', 'facial', 'printer'].includes(message.type) ||
-      !equipmentModelsFor(message.type).includes(message.model)) {
+  const equipmentType = message.equipmentType;
+  if (!['catraca', 'biometric', 'facial', 'printer'].includes(equipmentType) ||
+      !equipmentModelsFor(equipmentType).includes(message.model)) {
     throw new Error('O tipo ou modelo de equipamento não é permitido.');
   }
   if (!Array.isArray(message.posts) || message.posts.length < 1 || message.posts.length > 2) {
@@ -759,20 +760,20 @@ function validateEquipmentPlan(message) {
     biometric: [[2]],
     facial: [[5], [5, 1]],
     printer: [[3], [3, 1]]
-  }[message.type];
+  }[equipmentType];
   if (!validSequences.some(sequence =>
     sequence.length === types.length && sequence.every((type, index) => type === types[index])
   )) {
     throw new Error('A sequência de gravações não corresponde ao equipamento selecionado.');
   }
-  const requiresTwoSteps = message.type === 'catraca'
+  const requiresTwoSteps = equipmentType === 'catraca'
     ? message.model === 'Actuar Smart'
-    : message.type === 'facial'
+    : equipmentType === 'facial'
       ? message.model === 'iDFace' && types.length === 2
-      : message.type === 'printer' && types.length === 2;
-  if ((message.type === 'catraca' && types.length === 2 && !requiresTwoSteps) ||
-      (message.type === 'facial' && types.length === 2 && !requiresTwoSteps) ||
-      (message.type === 'printer' && types.length === 2 && !requiresTwoSteps)) {
+      : equipmentType === 'printer' && types.length === 2;
+  if ((equipmentType === 'catraca' && types.length === 2 && !requiresTwoSteps) ||
+      (equipmentType === 'facial' && types.length === 2 && !requiresTwoSteps) ||
+      (equipmentType === 'printer' && types.length === 2 && !requiresTwoSteps)) {
     throw new Error('A sequência de gravações não corresponde ao modelo selecionado.');
   }
   if (JSON.stringify(message.posts).length > 16000) throw new Error('Os dados do equipamento excedem o limite permitido.');
@@ -783,10 +784,10 @@ function validateEquipmentPlan(message) {
       throw new Error('Os dados do equipamento são inválidos.');
     }
   }
-  const primaryIndex = message.type === 'catraca' && message.model === 'Actuar Smart' ? 1 : 0;
+  const primaryIndex = equipmentType === 'catraca' && message.model === 'Actuar Smart' ? 1 : 0;
   assertEquipmentPayloadModel(
     message.posts[primaryIndex],
-    equipmentModelMetadata(message.type, message.model)
+    equipmentModelMetadata(equipmentType, message.model)
   );
   if (primaryIndex === 1) {
     assertEquipmentPayloadModel(
@@ -797,14 +798,14 @@ function validateEquipmentPlan(message) {
       throw new Error('A sequência da catraca Actuar Smart está incompleta.');
     }
   }
-  if (message.type === 'printer' && types.length === 2) {
+  if (equipmentType === 'printer' && types.length === 2) {
     const dependency = message.posts[1];
     if (dependency.ModeloCatraca !== 20 || dependency.__afterCreatedPrinter !== true ||
         dependency.Fake?.CodigoImpressoraTreino !== 'CREATED_PRINTER_ID') {
       throw new Error('A sequência da impressora está incompleta.');
     }
   }
-  if (message.type === 'facial' && types.length === 2) {
+  if (equipmentType === 'facial' && types.length === 2) {
     const dependency = message.posts[1];
     if (dependency.ModeloCatraca !== 20 || dependency.__afterCreatedFacial !== true ||
         dependency.EquipamentoCatraca?.CodigoEquipamentoReconhecimentoFacial !== 'CREATED_FACIAL_ID') {
@@ -850,18 +851,29 @@ async function createNextfitEquipment(message) {
     });
     let result;
     try {
-      result = await nextfitJson(response, 'Não foi possível criar o equipamento');
+      if (!response.ok) {
+        await nextfitJson(response, 'Não foi possível criar o equipamento');
+      }
+      const body = await response.text();
+      if (body.trim()) {
+        try {
+          result = JSON.parse(body);
+        } catch (error) {
+          if (error?.name !== 'SyntaxError') throw error;
+        }
+      }
       if (result?.Success === false) {
-        throw new Error('A Next Fit não confirmou a criação do equipamento.');
+        apiContent(result, 'A Next Fit não confirmou a criação do equipamento.');
       }
     } catch (error) {
       if (index > 0) {
-        throw new Error(`A primeira gravação foi concluída, mas a etapa ${index + 1} falhou. Confira os equipamentos da unidade antes de tentar novamente.`);
+        throw new Error(`A primeira gravação foi concluída, mas a etapa ${index + 1} falhou: ${error.message} Confira os equipamentos da unidade antes de tentar novamente.`);
       }
       throw error;
     }
     priorCreatedId = result?.Content?.Id || result?.Id || null;
-    if (index < payloads.length - 1 && !Number.isSafeInteger(Number(priorCreatedId))) {
+    if (index < payloads.length - 1 &&
+        (!Number.isSafeInteger(Number(priorCreatedId)) || Number(priorCreatedId) <= 0)) {
       throw new Error('A primeira gravação foi concluída, mas a Next Fit não retornou o código necessário para continuar o fluxo.');
     }
   }

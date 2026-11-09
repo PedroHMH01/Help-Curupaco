@@ -15,6 +15,7 @@ let priorityInboxSortMenuOpened = false;
 let observationsConversationId = null;
 let observations = [];
 let lastEquipmentUtilitiesContext = '';
+let activeEquipmentUtilitiesAction = '';
 
 function removeLegacyFreshworksTheme() {
   const root = document.documentElement;
@@ -196,6 +197,9 @@ function ensureEquipmentUtilitiesButtons() {
       button.type = 'button';
       button.dataset.action = action;
       button.textContent = label;
+      if (action === 'users' || action === 'equipment') {
+        button.setAttribute('aria-pressed', 'false');
+      }
       if (action === 'control-access') {
         button.title = 'Copiar o link do Controle de Acesso';
         button.addEventListener('click', () => copyControlAccessLink(button));
@@ -205,6 +209,7 @@ function ensureEquipmentUtilitiesButtons() {
       toolbar.appendChild(button);
     }
   });
+  updateEquipmentUtilitiesToolbarState();
 
   const emojiDropdown = document.getElementById('emojiPickerDropDown');
   if (emojiDropdown?.parentElement) {
@@ -219,6 +224,17 @@ function ensureEquipmentUtilitiesButtons() {
     toolbar.parentElement?.classList.remove('hc-equipment-utilities-toolbar-container');
     if (toolbar.parentElement !== document.body) document.body.appendChild(toolbar);
   }
+}
+
+function updateEquipmentUtilitiesToolbarState(action = activeEquipmentUtilitiesAction) {
+  activeEquipmentUtilitiesAction = action;
+  const panel = document.getElementById(equipmentUtilitiesPanelId);
+  const isOpen = Boolean(panel && !panel.hidden);
+  const toolbar = document.getElementById(equipmentUtilitiesToolbarId);
+  toolbar?.querySelectorAll('[data-action="users"], [data-action="equipment"]').forEach(button => {
+    const active = isOpen && button.dataset.action === activeEquipmentUtilitiesAction;
+    button.setAttribute('aria-pressed', String(active));
+  });
 }
 
 async function copyControlAccessLink(button) {
@@ -284,7 +300,17 @@ function openEquipmentUtilities(action) {
   const extensionPage = getExtensionUrl('equipment-utilities.html');
   if (!extensionPage) return;
 
+  if ((action === 'users' || action === 'equipment') &&
+      !panel.hidden && activeEquipmentUtilitiesAction === action) {
+    panel.hidden = true;
+    updateEquipmentUtilitiesToolbarState('');
+    return;
+  }
+
   panel.hidden = false;
+  updateEquipmentUtilitiesToolbarState(
+    action === 'users' || action === 'equipment' ? action : ''
+  );
   const email = getCustomerEmailFromConversation();
   const conversationId = getCurrentConversationId() || location.pathname;
   lastEquipmentUtilitiesContext = JSON.stringify({ email, conversationId });
@@ -338,6 +364,7 @@ window.addEventListener('message', event => {
     return;
   }
   panel.hidden = true;
+  updateEquipmentUtilitiesToolbarState('');
 });
 
 function containsEmojiDropdownNode(nodes) {

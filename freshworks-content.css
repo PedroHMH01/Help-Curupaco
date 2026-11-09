@@ -101,6 +101,16 @@
   background: #f3ebff;
 }
 
+.hc-equipment-utilities-toolbar button[aria-pressed="true"] {
+  color: #fff;
+  border-color: #4d1f6b;
+  background: #4d1f6b;
+}
+
+.hc-equipment-utilities-toolbar button[aria-pressed="true"]:hover {
+  background: #3d1855;
+}
+
 .hc-equipment-utilities-toolbar.is-floating {
   position: fixed;
   z-index: 2147483001;
