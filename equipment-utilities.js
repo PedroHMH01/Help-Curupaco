@@ -654,20 +654,6 @@ async function selectBase(base) {
   }
 }
 
-function maskEquipmentSecrets(configuration) {
-  const masked = {};
-  for (const [key, value] of Object.entries(configuration)) {
-    if (/token|secret/i.test(key) && value !== null && value !== '') {
-      masked[key] = '********';
-    } else if (value && typeof value === 'object' && !Array.isArray(value)) {
-      masked[key] = maskEquipmentSecrets(value);
-    } else {
-      masked[key] = value;
-    }
-  }
-  return masked;
-}
-
 function equipmentConfiguration(item) {
   const modelProperties = {
     1: ['ModeloCatraca', {
@@ -697,6 +683,176 @@ function equipmentConfiguration(item) {
   ) || '';
 }
 
+function equipmentFieldLabel(key) {
+  const labels = {
+    Ip: 'IP',
+    IpServidor: 'IP do servidor',
+    IpInner: 'IP do Inner',
+    Porta: 'Porta',
+    PortaHttp: 'Porta HTTP',
+    PortaServidor: 'Porta do servidor',
+    PortaServidorLocal: 'Porta do servidor local',
+    PortaCom: 'Porta COM',
+    Usuario: 'Usuário',
+    Senha: 'Senha',
+    QuantidadeDigitos: 'Quantidade de dígitos',
+    TempoLiberacaoSegundos: 'Tempo de liberação (segundos)',
+    SentidoCatraca: 'Sentido da catraca',
+    UtilizaTeclado: 'Utiliza teclado',
+    UtilizaBiometria: 'Utiliza biometria',
+    UtilizaImpressaoTreino: 'Utiliza impressão de treino',
+    CodigoImpressoraTreino: 'Código da impressora de treino',
+    TipoComunicacao: 'Tipo de comunicação',
+    TipoLeitor: 'Tipo de leitor',
+    FormaLiberacao: 'Forma de liberação',
+    FaixaIp: 'Faixa de IP',
+    Rts: 'RTS',
+    Dtr: 'DTR'
+  };
+  if (labels[key]) return labels[key];
+  return key
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/Ip/g, 'IP')
+    .replace(/Com/g, 'COM')
+    .replace(/Digitos/g, 'dígitos')
+    .replace(/Liberacao/g, 'liberação')
+    .replace(/Utiliza/g, 'Utiliza')
+    .replace(/([a-z])([A-Z])/g, '$1 $2');
+}
+
+function equipmentFieldOptions(key, configKey) {
+  const options = {
+    Giro: [
+      [1, 'Livre'],
+      [2, 'Controla entrada'],
+      [3, 'Controla saída'],
+      [4, 'Controla entrada e saída']
+    ],
+    SentidoCatraca: [
+      [1, 'Horário'],
+      [2, 'Anti-horário']
+    ],
+    TipoComunicacao: [
+      [1, 'TCP/IP'],
+      [2, 'Serial']
+    ],
+    TipoLeitor: [
+      [0, 'Código de barras'],
+      [6, 'Wiegand']
+    ],
+    FormaLeitura: [
+      [1, 'Teclado'],
+      [2, 'Biometria'],
+      [3, 'Teclado e biometria']
+    ]
+  };
+  if (key === 'FormaLiberacao') {
+    if (configKey === 'FacialTopData') {
+      return [[1, 'Leitor'], [2, 'Catraca'], [3, 'Wiegand']];
+    }
+    if (configKey === 'IntelbrasBioT') {
+      return [[1, 'Leitor'], [2, 'Catraca']];
+    }
+    if (configKey === 'IdFace') {
+      return [[1, 'Catraca'], [2, 'Leitor']];
+    }
+  }
+  return options[key] || null;
+}
+
+function appendEquipmentEditFields(container, configuration, path = []) {
+  for (const [key, value] of Object.entries(configuration)) {
+    if (/token|secret/i.test(key)) continue;
+    const fieldPath = [...path, key];
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      const group = document.createElement('fieldset');
+      group.className = 'equipment-edit-group';
+      const legend = document.createElement('legend');
+      legend.textContent = equipmentFieldLabel(key);
+      group.appendChild(legend);
+      appendEquipmentEditFields(group, value, fieldPath);
+      if (group.children.length > 1) container.appendChild(group);
+      continue;
+    }
+    if (value === null || !['string', 'number', 'boolean'].includes(typeof value)) continue;
+
+    const label = document.createElement('label');
+    label.textContent = equipmentFieldLabel(key);
+    const input = document.createElement('input');
+    input.dataset.fieldPath = JSON.stringify(fieldPath);
+    input.dataset.valueType = typeof value;
+    if (typeof value === 'boolean') {
+      input.type = 'checkbox';
+      input.checked = value;
+      label.className = 'checkbox-label';
+      label.appendChild(input);
+      container.appendChild(label);
+      continue;
+    }
+    const configKey = equipmentBeingEdited?.key;
+    const options = equipmentFieldOptions(key, configKey);
+    if (options) {
+      const select = document.createElement('select');
+      select.dataset.fieldPath = input.dataset.fieldPath;
+      select.dataset.valueType = input.dataset.valueType;
+      for (const [optionValue, optionLabel] of options) {
+        const option = document.createElement('option');
+        option.value = String(optionValue);
+        option.textContent = optionLabel;
+        select.appendChild(option);
+      }
+      if (!options.some(([optionValue]) => optionValue === value)) {
+        const currentOption = document.createElement('option');
+        currentOption.value = String(value);
+        currentOption.textContent = String(value);
+        select.appendChild(currentOption);
+      }
+      select.value = String(value);
+      label.appendChild(select);
+      container.appendChild(label);
+      continue;
+    }
+    input.type = typeof value === 'number' ? 'number' : /senha|password/i.test(key) ? 'password' : 'text';
+    input.value = String(value);
+    if (typeof value === 'number') {
+      input.step = 'any';
+      input.required = true;
+    }
+    label.appendChild(input);
+    container.appendChild(label);
+  }
+}
+
+function setEquipmentConfigurationValue(configuration, path, value) {
+  let target = configuration;
+  for (const key of path.slice(0, -1)) {
+    if (!target[key] || typeof target[key] !== 'object' || Array.isArray(target[key])) {
+      target[key] = {};
+    }
+    target = target[key];
+  }
+  target[path[path.length - 1]] = value;
+}
+
+function readEquipmentEditConfiguration(item, key) {
+  const configuration = JSON.parse(JSON.stringify(item[key]));
+  for (const input of document.querySelectorAll('#edit-equipment-configuration [data-field-path]')) {
+    const path = JSON.parse(input.dataset.fieldPath);
+    const originalType = input.dataset.valueType;
+    let value;
+    if (originalType === 'boolean') {
+      value = input.checked;
+    } else if (originalType === 'number') {
+      value = Number(input.value);
+      if (!Number.isFinite(value)) throw new Error(`Informe um número válido para ${equipmentFieldLabel(path[path.length - 1])}.`);
+    } else {
+      value = input.value;
+    }
+    setEquipmentConfigurationValue(configuration, path, value);
+  }
+  return { [key]: configuration };
+}
+
 function openEquipmentEditor(item) {
   const key = equipmentConfiguration(item);
   if (!item.Id) {
@@ -705,9 +861,22 @@ function openEquipmentEditor(item) {
   }
   equipmentBeingEdited = { item, key };
   document.getElementById('edit-equipment-description').value = item.Descricao || '';
-  document.getElementById('edit-equipment-configuration').value =
-    key ? JSON.stringify({ [key]: maskEquipmentSecrets(item[key]) }, null, 2) : '{}';
-  document.getElementById('edit-equipment-configuration').disabled = !key;
+  const configurationFields = document.getElementById('edit-equipment-configuration');
+  configurationFields.replaceChildren();
+  if (key) {
+    appendEquipmentEditFields(configurationFields, item[key]);
+    if (!configurationFields.children.length) {
+      const empty = document.createElement('p');
+      empty.className = 'muted';
+      empty.textContent = 'Este modelo não possui campos de configuração editáveis.';
+      configurationFields.appendChild(empty);
+    }
+  } else {
+    const unavailable = document.createElement('p');
+    unavailable.className = 'muted';
+    unavailable.textContent = 'A configuração deste modelo não foi retornada; somente a descrição poderá ser editada.';
+    configurationFields.appendChild(unavailable);
+  }
   document.getElementById('equipment-edit-form').hidden = false;
   document.getElementById('equipment-form').hidden = true;
   document.getElementById('equipment-edit-form').scrollIntoView({ block: 'nearest' });
@@ -1062,13 +1231,15 @@ document.getElementById('equipment-edit-form').addEventListener('submit', async 
   const description = document.getElementById('edit-equipment-description').value.trim();
   let configuration;
   try {
-    configuration = JSON.parse(document.getElementById('edit-equipment-configuration').value);
-  } catch {
-    showStatus('A configuração deve ser um JSON válido.', 'error');
+    configuration = equipmentBeingEdited.key
+      ? readEquipmentEditConfiguration(equipmentBeingEdited.item, equipmentBeingEdited.key)
+      : {};
+  } catch (error) {
+    showStatus(error.message, 'error');
     return;
   }
   const confirmed = window.confirm(
-    `Salvar alterações no equipamento "${equipmentBeingEdited.item.Descricao || 'Equipamento'}"?\n\nDescrição: ${description}\n\nConfirme somente se revisou a configuração.`
+    `Salvar alterações no equipamento "${equipmentBeingEdited.item.Descricao || 'Equipamento'}"?\n\nDescrição: ${description}\n\nOs campos de configuração preenchidos serão atualizados.`
   );
   if (!confirmed) return;
   setBusy(form, true, 'Salvando…');

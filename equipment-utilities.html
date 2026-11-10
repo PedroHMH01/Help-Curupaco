@@ -101,10 +101,8 @@
         <form id="equipment-edit-form" class="form-grid editor-form" hidden>
           <h3>Editar equipamento</h3>
           <label>Descrição<input id="edit-equipment-description" maxlength="200" required></label>
-          <label>Configuração do modelo (JSON)
-            <textarea id="edit-equipment-configuration" rows="9" spellcheck="false" required></textarea>
-          </label>
-          <p class="muted">As senhas de acesso físico ficam visíveis nesta configuração. Tokens e segredos continuam ocultos.</p>
+          <div id="edit-equipment-configuration" class="form-grid equipment-edit-fields"></div>
+          <p class="muted">Campos de senha ficam ocultos. Tokens e segredos não são editados e permanecem preservados.</p>
           <div class="actions">
             <button id="cancel-equipment-edit" class="secondary" type="button">Cancelar</button>
             <button class="primary" type="submit">Revisar e salvar</button>

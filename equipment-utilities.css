@@ -80,6 +80,9 @@ button:disabled { cursor: wait; opacity: .6; }
 .list-heading { margin: 16px 0 10px; }
 .equipment-list { display: grid; gap: 7px; }
 .utility-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.equipment-edit-fields { gap: 10px; }
+.equipment-edit-group { display: grid; gap: 10px; margin: 0; padding: 12px; border: 1px solid #e6deed; border-radius: 8px; }
+.equipment-edit-group legend { padding: 0 5px; color: #573575; font-size: 12px; font-weight: 700; }
 .record-list { display: grid; gap: 8px; margin-top: 12px; }
 .equipment-item, .user-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px; border: 1px solid #eee9f2; border-radius: 7px; font-size: 12px; }
 .record-details { display: grid; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
@@ -88,7 +91,6 @@ button:disabled { cursor: wait; opacity: .6; }
 .record-actions button { min-height: 30px; padding: 5px 8px; }
 .danger { color: #8d2222; background: #fff0ef; }
 .editor-form { margin-top: 16px; padding-top: 14px; border-top: 1px solid #e6deed; }
-.editor-form textarea { width: 100%; padding: 9px; border: 1px solid #d5cfdd; border-radius: 7px; color: #242236; background: #fff; font-family: Consolas, monospace; font-size: 12px; }
 .user-creation-choice, .created-credentials { display: grid; gap: 10px; margin-top: 14px; padding: 12px; border: 1px solid #e6deed; border-radius: 8px; background: #faf8fc; }
 .user-creation-choice > p, .created-credentials h3, .created-credentials .muted { margin: 0; }
 .created-credentials { border-color: #b7d9c0; background: #f2faf4; }
