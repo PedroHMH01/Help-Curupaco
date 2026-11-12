@@ -329,6 +329,21 @@ function openEquipmentUtilities(action) {
   }, new URL(extensionPage).origin);
 }
 
+document.addEventListener('click', event => {
+  const panel = document.getElementById(equipmentUtilitiesPanelId);
+  if (!panel || panel.hidden || panel.contains(event.target)) return;
+
+  const target = event.target instanceof Element ? event.target : null;
+  const clickedUtilityToggle = target?.closest(
+    `#${equipmentUtilitiesToolbarId} [data-action="users"], ` +
+    `#${equipmentUtilitiesToolbarId} [data-action="equipment"]`
+  );
+  if (clickedUtilityToggle) return;
+
+  panel.hidden = true;
+  updateEquipmentUtilitiesToolbarState('');
+});
+
 function notifyEquipmentUtilitiesContext() {
   const panel = document.getElementById(equipmentUtilitiesPanelId);
   const frame = panel?.querySelector('iframe');

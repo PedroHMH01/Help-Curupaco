@@ -157,6 +157,29 @@ const NEXTFIT_EQUIPMENT_CONFIG_KEYS = [
   'EquipamentoCatraca', 'IdFace', 'FacialTopData', 'HikvisionFacial', 'IntelbrasBioT',
   'RfNextFit', 'DigitalPersonaUAreU', 'FS80H', 'HamsterDx'
 ];
+const NEXTFIT_EDITABLE_EQUIPMENT_FIELDS = {
+  Fake: ['QuantidadeDigitos'],
+  TopData: ['Biometria', 'TipoLeitor'],
+  ActuarSmart: ['SentidoCatraca', 'Giro'],
+  ActuarLiteNet2: ['Versao', 'Numero', 'SentidoCatraca', 'FaixaIp', 'Giro'],
+  ActuarLiteNet3: ['Numero', 'SentidoCatraca', 'FaixaIp', 'Giro'],
+  Henry7X: ['Ip', 'SentidoCatraca', 'Giro', 'FormaLeitura'],
+  Henry8X: ['Ip', 'Giro', 'SentidoCatraca'],
+  SerialGenerica: ['PortaCom', 'SentidoCatraca', 'Giro', 'Rts', 'Dtr'],
+  IdBlock: ['Ip', 'Usuario', 'Senha', 'SentidoCatraca', 'Giro'],
+  IdBlockV2: ['Ip', 'Facial', 'Teclado', 'Biometria', 'Giro', 'Senha', 'SentidoCatraca', 'Usuario'],
+  ProveuTupa: ['Ip', 'SentidoCatraca', 'Giro'],
+  TecnibraTcaIhm: ['TipoComunicacao', 'Ip', 'PortaCom', 'SentidoCatraca', 'Giro', 'UtilizaTeclado', 'UtilizaBiometria', 'Senha'],
+  HikvisionFacial: ['Ip', 'PortaHttp', 'PortaServidor', 'Usuario', 'Senha'],
+  RfNextFit: ['NomeCameraPrincipal', 'TamanhoMinimoFace', 'UtilizarOutraCameraParaCadastro'],
+  IdFace: ['Ip', 'Usuario', 'Senha', 'FormaLiberacao'],
+  FacialTopData: ['PortaLeitor', 'FormaLiberacao'],
+  IntelbrasBioT: ['Ip', 'PortaServidorLocal', 'Usuario', 'Senha', 'FormaLiberacao'],
+  DigitalPersonaUAreU: [],
+  FS80H: [],
+  HamsterDx: []
+};
+const NEXTFIT_MANAGED_USER_EMAIL = /@(catraca|controle)(?:\.|$)/i;
 
 function isExtensionPage(sender) {
   return sender.id === chrome.runtime.id &&
@@ -542,6 +565,49 @@ async function listNextfitUsers(cadastroId) {
   return getNextfitUsers(id);
 }
 
+async function inactivateNextfitUser(message) {
+  const id = Number(message.id);
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    throw new Error('O usuário selecionado não tem um código válido.');
+  }
+  const supportState = await chrome.storage.session.get(NEXTFIT_SUPPORT_KEY);
+  const support = supportState[NEXTFIT_SUPPORT_KEY];
+  if (!support?.accessToken || !Number.isSafeInteger(Number(support.cadastroId))) {
+    throw new Error('Selecione uma base antes de remover o usuário.');
+  }
+  const users = await getNextfitUsers(Number(support.cadastroId));
+  const user = users.find(item => Number(item?.Id) === id);
+  const email = String(user?.Email || user?.Usuario || '').trim();
+  if (!user || !NEXTFIT_MANAGED_USER_EMAIL.test(email)) {
+    throw new Error('Só é permitido remover usuários ativos com e-mail @catraca ou @controle desta base.');
+  }
+
+  const response = await requestSupportApi(`${NEXTFIT_API}/usuario/Inativar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ Codigo: id })
+  });
+  if (!response.ok) {
+    await nextfitJson(response, 'Não foi possível remover o usuário');
+  }
+  const body = await response.text();
+  if (body.trim()) {
+    let result;
+    try {
+      result = JSON.parse(body);
+    } catch (error) {
+      if (error?.name === 'SyntaxError') {
+        throw new Error('A Next Fit retornou uma resposta inválida ao remover o usuário.');
+      }
+      throw error;
+    }
+    if (result?.Success === false) {
+      throw new Error('A Next Fit não confirmou a remoção do usuário.');
+    }
+  }
+  return { inactivated: true };
+}
+
 async function inactivateNextfitEquipment(message) {
   const id = Number(message.id);
   if (!Number.isSafeInteger(id) || id <= 0) {
@@ -592,12 +658,25 @@ async function updateNextfitEquipment(message) {
   const existing = equipment.find(item => Number(item?.Id) === id);
   if (!existing) throw new Error('O equipamento não foi encontrado nesta unidade.');
 
-  existing.Descricao = description;
   const entries = Object.entries(safeConfiguration);
+  const configKey = entries[0]?.[0] ||
+    Object.keys(NEXTFIT_EDITABLE_EQUIPMENT_FIELDS).find(key =>
+      existing[key] && typeof existing[key] === 'object' && !Array.isArray(existing[key])
+    ) || '';
+  const equipmentType = Number(existing.Tipo);
+  const canEditDescription = equipmentType === 3 ||
+    (equipmentType === 1 && ['Fake', 'SerialGenerica'].includes(configKey)) ||
+    (equipmentType === 2 && ['DigitalPersonaUAreU', 'FS80H', 'HamsterDx'].includes(configKey));
+  if (!canEditDescription && description !== String(existing.Descricao || '')) {
+    throw new Error('A descrição deste modelo não pode ser editada.');
+  }
+  if (canEditDescription) existing.Descricao = description;
+
   if (entries.length) {
     const [configKey, changes] = entries[0];
+    const editableFields = NEXTFIT_EDITABLE_EQUIPMENT_FIELDS[configKey] || [];
     if (!existing[configKey] || typeof existing[configKey] !== 'object' ||
-        Array.isArray(existing[configKey])) {
+        Array.isArray(existing[configKey]) || !editableFields.length) {
       throw new Error('A configuração enviada não corresponde ao modelo do equipamento.');
     }
     const updatedConfiguration = { ...existing[configKey] };
@@ -605,9 +684,13 @@ async function updateNextfitEquipment(message) {
       if (['__proto__', 'constructor', 'prototype'].includes(key)) {
         throw new Error('A configuração enviada contém uma propriedade inválida.');
       }
-      if (!(/senha|password|token|secret/i.test(key) && value === '********')) {
-        updatedConfiguration[key] = value;
+      if (!editableFields.includes(key) ||
+          !['string', 'number', 'boolean'].includes(typeof value) ||
+          !Object.prototype.hasOwnProperty.call(existing[configKey], key) ||
+          typeof existing[configKey][key] !== typeof value) {
+        throw new Error('A configuração enviada contém campos que não podem ser editados.');
       }
+      updatedConfiguration[key] = value;
     }
     existing[configKey] = updatedConfiguration;
   }
@@ -956,6 +1039,8 @@ async function handleNextfitMessage(message, sender) {
       return listNextfitUsers(message.cadastroId);
     case 'help-curupaco:nextfit:user:create':
       return createNextfitUser(message);
+    case 'help-curupaco:nextfit:user:inactivate':
+      return inactivateNextfitUser(message);
     case 'help-curupaco:nextfit:equipment:create':
       return createNextfitEquipment(message);
     case 'help-curupaco:nextfit:equipment:update':

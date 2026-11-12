@@ -148,6 +148,29 @@ const FIELD_CONFIG = {
   }
 };
 
+const EDITABLE_EQUIPMENT_FIELDS = {
+  Fake: ['QuantidadeDigitos'],
+  TopData: ['Biometria', 'TipoLeitor'],
+  ActuarSmart: ['SentidoCatraca', 'Giro'],
+  ActuarLiteNet2: ['Versao', 'Numero', 'SentidoCatraca', 'FaixaIp', 'Giro'],
+  ActuarLiteNet3: ['Numero', 'SentidoCatraca', 'FaixaIp', 'Giro'],
+  Henry7X: ['Ip', 'SentidoCatraca', 'Giro', 'FormaLeitura'],
+  Henry8X: ['Ip', 'Giro', 'SentidoCatraca'],
+  SerialGenerica: ['PortaCom', 'SentidoCatraca', 'Giro', 'Rts', 'Dtr'],
+  IdBlock: ['Ip', 'Usuario', 'Senha', 'SentidoCatraca', 'Giro'],
+  IdBlockV2: ['Ip', 'Facial', 'Teclado', 'Biometria', 'Giro', 'Senha', 'SentidoCatraca', 'Usuario'],
+  ProveuTupa: ['Ip', 'SentidoCatraca', 'Giro'],
+  TecnibraTcaIhm: ['TipoComunicacao', 'Ip', 'PortaCom', 'SentidoCatraca', 'Giro', 'UtilizaTeclado', 'UtilizaBiometria', 'Senha'],
+  HikvisionFacial: ['Ip', 'PortaHttp', 'PortaServidor', 'Usuario', 'Senha'],
+  RfNextFit: ['NomeCameraPrincipal', 'TamanhoMinimoFace', 'UtilizarOutraCameraParaCadastro'],
+  IdFace: ['Ip', 'Usuario', 'Senha', 'FormaLiberacao'],
+  FacialTopData: ['PortaLeitor', 'FormaLiberacao'],
+  IntelbrasBioT: ['Ip', 'PortaServidorLocal', 'Usuario', 'Senha', 'FormaLiberacao'],
+  DigitalPersonaUAreU: [],
+  FS80H: [],
+  HamsterDx: []
+};
+
 const app = document.getElementById('app');
 const statusElement = document.getElementById('status');
 const loginView = document.getElementById('login-view');
@@ -616,8 +639,23 @@ function renderUsers(items) {
     profile.textContent = user.Perfil || user.NomePerfil || `Perfil ${user.TipoPerfil ?? 'não informado'}`;
     details.append(name, email, profile);
     row.appendChild(details);
+    if (isManagedUserEmail(email.textContent)) {
+      const actions = document.createElement('div');
+      actions.className = 'record-actions';
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'danger';
+      remove.textContent = 'Remover';
+      remove.addEventListener('click', event => removeUser(user, event.currentTarget));
+      actions.appendChild(remove);
+      row.appendChild(actions);
+    }
     userListElement.appendChild(row);
   }
+}
+
+function isManagedUserEmail(email) {
+  return /@(catraca|controle)(?:\.|$)/i.test(email);
 }
 
 async function selectBase(base) {
@@ -760,9 +798,9 @@ function equipmentFieldOptions(key, configKey) {
   return options[key] || null;
 }
 
-function appendEquipmentEditFields(container, configuration, path = []) {
+function appendEquipmentEditFields(container, configuration, allowedFields, path = []) {
   for (const [key, value] of Object.entries(configuration)) {
-    if (/token|secret/i.test(key)) continue;
+    if (/token|secret/i.test(key) || !allowedFields.includes(key)) continue;
     const fieldPath = [...path, key];
     if (value && typeof value === 'object' && !Array.isArray(value)) {
       const group = document.createElement('fieldset');
@@ -770,7 +808,7 @@ function appendEquipmentEditFields(container, configuration, path = []) {
       const legend = document.createElement('legend');
       legend.textContent = equipmentFieldLabel(key);
       group.appendChild(legend);
-      appendEquipmentEditFields(group, value, fieldPath);
+      appendEquipmentEditFields(group, value, allowedFields, fieldPath);
       if (group.children.length > 1) container.appendChild(group);
       continue;
     }
@@ -835,7 +873,8 @@ function setEquipmentConfigurationValue(configuration, path, value) {
 }
 
 function readEquipmentEditConfiguration(item, key) {
-  const configuration = JSON.parse(JSON.stringify(item[key]));
+  if (!(EDITABLE_EQUIPMENT_FIELDS[key] || []).length) return {};
+  const configuration = {};
   for (const input of document.querySelectorAll('#edit-equipment-configuration [data-field-path]')) {
     const path = JSON.parse(input.dataset.fieldPath);
     const originalType = input.dataset.valueType;
@@ -853,6 +892,13 @@ function readEquipmentEditConfiguration(item, key) {
   return { [key]: configuration };
 }
 
+function canEditEquipmentDescription(item, key) {
+  const type = Number(item.Tipo);
+  return type === 3 ||
+    (type === 1 && ['Fake', 'SerialGenerica'].includes(key)) ||
+    (type === 2 && ['DigitalPersonaUAreU', 'FS80H', 'HamsterDx'].includes(key));
+}
+
 function openEquipmentEditor(item) {
   const key = equipmentConfiguration(item);
   if (!item.Id) {
@@ -860,11 +906,19 @@ function openEquipmentEditor(item) {
     return;
   }
   equipmentBeingEdited = { item, key };
-  document.getElementById('edit-equipment-description').value = item.Descricao || '';
+  const descriptionInput = document.getElementById('edit-equipment-description');
+  const canEditDescription = canEditEquipmentDescription(item, key);
+  document.getElementById('edit-equipment-description-label').hidden = !canEditDescription;
+  descriptionInput.disabled = !canEditDescription;
+  descriptionInput.required = canEditDescription;
+  descriptionInput.value = item.Descricao || '';
   const configurationFields = document.getElementById('edit-equipment-configuration');
   configurationFields.replaceChildren();
+  const allowedFields = EDITABLE_EQUIPMENT_FIELDS[key] || [];
   if (key) {
-    appendEquipmentEditFields(configurationFields, item[key]);
+    if (allowedFields.length) {
+      appendEquipmentEditFields(configurationFields, item[key], allowedFields);
+    }
     if (!configurationFields.children.length) {
       const empty = document.createElement('p');
       empty.className = 'muted';
@@ -912,6 +966,35 @@ async function refreshUsers() {
   }
   currentUsers = await send('user:list', { cadastroId: selectedBase.Id });
   renderUsers(currentUsers);
+}
+
+async function removeUser(user, button) {
+  const email = String(user.Email || user.Usuario || '').trim();
+  if (!isManagedUserEmail(email)) {
+    showStatus('Só é permitido remover usuários com e-mail @catraca ou @controle.', 'error');
+    return;
+  }
+  const id = Number(user.Id);
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    showStatus('Não foi possível identificar o código deste usuário para removê-lo.', 'error');
+    return;
+  }
+  const name = user.Nome || user.Usuario || email;
+  if (!window.confirm(`Remover o usuário "${name}" (${email}) da lista ativa? O usuário será inativado na Next Fit.`)) return;
+
+  button.disabled = true;
+  try {
+    await send('user:inactivate', { id });
+    showStatus('Usuário removido da lista ativa.', 'success');
+    try {
+      await refreshUsers();
+    } catch (error) {
+      showStatus(`Usuário removido, mas não foi possível atualizar a lista: ${error.message}`, 'error');
+    }
+  } catch (error) {
+    button.disabled = false;
+    showStatus(error.message, 'error');
+  }
 }
 
 async function openAccessSystem() {
@@ -1228,7 +1311,12 @@ document.getElementById('equipment-edit-form').addEventListener('submit', async 
   event.preventDefault();
   if (!equipmentBeingEdited || !selectedBase) return;
   const form = event.currentTarget;
-  const description = document.getElementById('edit-equipment-description').value.trim();
+  const description = canEditEquipmentDescription(
+    equipmentBeingEdited.item,
+    equipmentBeingEdited.key
+  )
+    ? document.getElementById('edit-equipment-description').value.trim()
+    : equipmentBeingEdited.item.Descricao || '';
   let configuration;
   try {
     configuration = equipmentBeingEdited.key
