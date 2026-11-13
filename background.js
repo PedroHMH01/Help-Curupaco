@@ -76,7 +76,7 @@ async function requestObservationApi(message) {
   url.searchParams.set('select', 'id,conversation_id,agent_name,observation,created_at');
   const headers = { apikey: anonKey };
   if (anonKey.startsWith('eyJ')) {
-    headers.Authorization = `Bearer ${anonKey}`;
+    headers.Authorization = 'Bearer ' + anonKey;
   }
   let response;
   if (message.type === 'help-curupaco:observations:list') {
@@ -91,9 +91,9 @@ async function requestObservationApi(message) {
     const observation = typeof message.observation === 'string'
       ? message.observation.trim()
       : '';
-    if (!agentName) throw new Error('Não foi possível identificar o agente no Freshworks.');
+    if (!agentName) throw new Error('N?o foi poss?vel identificar o agente no Freshworks.');
     if (!observation || observation.length > 3000) {
-      throw new Error('A observação deve ter entre 1 e 3000 caracteres.');
+      throw new Error('A observa??o deve ter entre 1 e 3000 caracteres.');
     }
 
     response = await fetch(url, {
@@ -111,7 +111,7 @@ async function requestObservationApi(message) {
       })
     });
   } else {
-    throw new Error('Operação de observações não reconhecida.');
+    throw new Error('Opera??o de observa??es n?o reconhecida.');
   }
 
   if (!response.ok) {
@@ -121,27 +121,10 @@ async function requestObservationApi(message) {
   return response.json();
 }
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (
-    typeof message?.type !== 'string' ||
-    !message.type.startsWith('help-curupaco:observations:') ||
-    !isFreshworksSender(sender)
-  ) {
-    return false;
-  }
-
-  requestObservationApi(message).then(
-    data => sendResponse({ ok: true, data }),
-    error => {
-      console.error('Falha ao acessar as observações da conversa:', error);
-      sendResponse({ ok: false, error: error.message || 'Falha ao acessar o Supabase.' });
-    }
-  );
-  return true;
-});
-
 const NEXTFIT_SESSION_KEY = 'helpCurupacoNextfitSession';
 const NEXTFIT_SUPPORT_KEY = 'helpCurupacoNextfitSupport';
+const NEXTFIT_OBSERVATION_FORM_KEY = 'helpCurupacoNextfitObservationForm';
+const NEXTFIT_OBSERVATION_TYPES = Object.freeze({ Perda: 5, Ganha: 5 });
 const NEXTFIT_EMAIL_KEY = 'helpCurupacoNextfitAgentEmail';
 const NEXTFIT_ADM_API = 'https://apiadm.nextfit.com.br/api';
 const NEXTFIT_API = 'https://api.nextfit.com.br/api';
@@ -284,7 +267,7 @@ async function requestAgentApi(url, options = {}) {
     ...options,
     headers: {
       ...(options.headers || {}),
-      Authorization: `Bearer ${token}`,
+      Authorization: 'Bearer ' + token,
       ...(options.unitCode ? { 'codigo-unidade': String(options.unitCode) } : {})
     }
   };
@@ -295,7 +278,7 @@ async function requestAgentApi(url, options = {}) {
     token = session.accessToken;
     response = await fetch(url, {
       ...init,
-      headers: { ...init.headers, Authorization: `Bearer ${token}` }
+      headers: { ...init.headers, Authorization: 'Bearer ' + token }
     });
   }
   return response;
@@ -317,7 +300,7 @@ async function requestSupportApi(url, options = {}) {
       const users = await getNextfitUsers(cadastroId);
       masterUserId = Number(selectSupportMaster(users)?.Id);
       if (!Number.isSafeInteger(masterUserId) || masterUserId <= 0) {
-        throw new Error('Não há usuário ativo na base para iniciar o acesso de suporte.');
+        throw new Error('N?o h? usu?rio ativo na base para iniciar o acesso de suporte.');
       }
     }
     support = await renewSupportAccess({ ...support, cadastroId, masterUserId });
@@ -326,7 +309,7 @@ async function requestSupportApi(url, options = {}) {
     ...options,
     headers: {
       ...(options.headers || {}),
-      Authorization: `Bearer ${support.accessToken}`,
+      Authorization: 'Bearer ' + support.accessToken,
       'codigo-unidade': String(support.unitCode)
     }
   };
@@ -335,15 +318,13 @@ async function requestSupportApi(url, options = {}) {
     const refreshed = await renewSupportAccess(support);
     response = await fetch(url, {
       ...init,
-      headers: { ...init.headers, Authorization: `Bearer ${refreshed.accessToken}` }
+      headers: { ...init.headers, Authorization: 'Bearer ' + refreshed.accessToken }
     });
   }
   return response;
 }
 
 async function createNextfitSupportAccess(support) {
-  const agentSession = await getNextfitSession();
-  const description = `Acesso pela ferramenta do painel de equipamentos${agentSession?.email ? `\nRealizado por: ${agentSession.email}` : ''}`;
   const response = await requestAgentApi(`${NEXTFIT_ADM_API}/AcessoSuporte`, {
     method: 'POST',
     unitCode: support.unitCode,
@@ -352,8 +333,8 @@ async function createNextfitSupportAccess(support) {
       CodigoCadastro: support.cadastroId,
       CodigoUsuario: support.masterUserId,
       Ticket: null,
-      Categoria: 3,
-      Descricao: description
+      Categoria: 5,
+      Descricao: 'Analise de dados para a reunião de expansão atravez do Help Gojo.'
     })
   });
   const result = await nextfitJson(response, 'Não foi possível registrar o acesso de suporte');
@@ -396,35 +377,433 @@ function apiContent(result, message) {
   return result.Content;
 }
 
-async function searchNextfitBases(email) {
-  if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-    throw new Error('Informe um e-mail de cliente válido.');
+function pickApiValue(source, ...paths) {
+  for (const path of paths) {
+    if (typeof path !== 'string' || !path.trim()) continue;
+    let current = source;
+    for (const segment of path.split('.')) {
+      if (current === null || current === undefined || typeof current !== 'object' || !(segment in current)) {
+        current = undefined;
+        break;
+      }
+      current = current[segment];
+    }
+    if (current !== undefined && current !== null && current !== '') return current;
   }
+  return undefined;
+}
+
+function deepFindValue(source, aliases) {
+  if (!source || typeof source !== 'object') return undefined;
+  const normalizedAliases = aliases.map(alias => String(alias).toLowerCase());
+  const queue = [source];
+  while (queue.length) {
+    const current = queue.pop();
+    if (Array.isArray(current)) {
+      for (const item of current) queue.push(item);
+      continue;
+    }
+    if (!current || typeof current !== 'object') continue;
+    for (const [key, value] of Object.entries(current)) {
+      const keyName = String(key).toLowerCase();
+      if (normalizedAliases.some(alias => keyName === alias || keyName.includes(alias))) {
+        return value;
+      }
+      if (value && typeof value === 'object') queue.push(value);
+    }
+  }
+  return undefined;
+}
+
+function extractResponseItems(value) {
+  if (Array.isArray(value)) return value;
+  if (!value || typeof value !== 'object') return [];
+  const candidates = [value.Content, value.Data, value.Result, value.Results, value.Items, value.Records, value.List, value.Dados, value.Cadastros, value.Faturas];
+  for (const candidate of candidates) {
+    const items = extractResponseItems(candidate);
+    if (items.length) return items;
+  }
+  if (value && typeof value === 'object') {
+    const direct = Object.values(value).flatMap(entry => extractResponseItems(entry));
+    if (direct.length) return direct;
+  }
+  return [];
+}
+
+function getPreviousMonthPeriod() {
+  const nowParts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: 'numeric'
+  }).formatToParts(new Date());
+  const year = Number(nowParts.find(part => part.type === 'year')?.value);
+  const month = Number(nowParts.find(part => part.type === 'month')?.value);
+  const start = new Date(Date.UTC(year, month - 2, 1, 3));
+  const nextMonthStart = new Date(Date.UTC(year, month - 1, 1, 3));
+  const end = new Date(nextMonthStart.getTime() - 1);
+  const formatDate = value => new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: 'America/Sao_Paulo'
+  }).format(value);
+  return {
+    start,
+    end,
+    startString: formatDate(start),
+    endString: formatDate(end),
+    label: new Intl.DateTimeFormat('pt-BR', {
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'America/Sao_Paulo'
+    }).format(start)
+  };
+}
+
+function normalizeNextfitBase(base) {
+  if (!base || typeof base !== 'object') return base;
+  const normalized = { ...base };
+  normalized.ModalidadeDescricao = pickApiValue(base,
+    'ModalidadeDescricao',
+    'Modalidade.Descricao',
+    'Modalidade.Nome',
+    'Modalidade',
+    'CadastroModalidade.Descricao',
+    'CadastroModalidade.Nome',
+    'ModalidadeDescricao.Descricao'
+  ) ?? deepFindValue(base, ['modalidade', 'modalidadedescricao']);
+  normalized.ModeloOperacaoDescricao = pickApiValue(base,
+    'ModeloOperacaoDescricao',
+    'ModeloOperacao.Descricao',
+    'ModeloOperacao.Nome',
+    'ModeloOperacao',
+    'CadastroModeloOperacao.Descricao',
+    'CadastroModeloOperacao.Nome',
+    'ModeloOperacaoDescricao.Descricao'
+  ) ?? deepFindValue(base, ['modelooperacao', 'modelooperacaodescricao']);
+  normalized.UtilizaMultiUnidade = pickApiValue(base,
+    'UtilizaMultiUnidade',
+    'Tenant.UtilizaMultiUnidade',
+    'Configuracao.UtilizaMultiUnidade',
+    'MultiUnidade.UtilizaMultiUnidade'
+  ) ?? deepFindValue(base, ['utilizamultiunidade']);
+  normalized.StatusAtivacao = pickApiValue(base,
+    'StatusAtivacao',
+    'StatusAtivacao.Descricao',
+    'StatusAtivacao.Nome',
+    'Status.Ativacao',
+    'StatusAtivacaoStatus.Descricao'
+  ) ?? deepFindValue(base, ['statusativacao']);
+  normalized.RealizouTreinamento = pickApiValue(base,
+    'RealizouTreinamento',
+    'RealizouTreinamentoCliente',
+    'Treinamento.RealizouTreinamento',
+    'Treinamento.Realizado',
+    'Cliente.RealizouTreinamento'
+  ) ?? deepFindValue(base, ['realizotreinamento']);
+  return normalized;
+}
+
+async function listNextfitInvoices(cadastroId) {
+  const id = Number(cadastroId);
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    throw new Error('Selecione um cadastro válido antes de consultar as faturas.');
+  }
+  const supportState = await chrome.storage.session.get(NEXTFIT_SUPPORT_KEY);
+  if (Number(supportState[NEXTFIT_SUPPORT_KEY]?.cadastroId) !== id) {
+    throw new Error('Selecione novamente o cadastro antes de consultar as faturas.');
+  }
+
   const query = new URLSearchParams({
-    Ativacao: 'null',
-    DataCancelamentoFinal: 'null',
-    DataCancelamentoInicial: 'null',
-    DataInicioFinal: 'null',
-    DataInicioInicial: 'null',
-    DataUltimoAcessoFinal: 'null',
-    DataUltimoAcessoInicial: 'null',
-    EmAtencao: 'null',
-    PesquisaGeral: email.trim(),
-    RealizouTreinamento: 'null',
-    Status: '[1,3,2,5,6]',
-    Trial: 'null',
-    Vip: 'null',
+    filter: JSON.stringify([{
+      property: 'CodigoCadastro',
+      operator: 'equal',
+      value: String(id),
+      and: false
+    }]),
+    limit: '12',
     page: '1',
-    sort: JSON.stringify([
-      { property: 'DataCriacao', direction: 'desc' },
-      { property: 'Id', direction: 'desc' }
-    ])
+    sort: JSON.stringify([{
+      property: 'MesAno',
+      direction: 'desc',
+      format: 'DD/MM/YYYY'
+    }])
   });
-  const response = await requestAgentApi(`${NEXTFIT_ADM_API}/Cadastro/ListarView?${query}`);
-  const result = await nextfitJson(response, 'Não foi possível buscar os cadastros');
-  const bases = apiContent(result, 'A busca de cadastros não foi concluída.');
-  if (!Array.isArray(bases)) throw new Error('A Next Fit retornou uma lista de cadastros inválida.');
-  return bases;
+  const response = await requestAgentApi(`${NEXTFIT_ADM_API}/CadastroFatura/Listar?${query}`);
+  const result = await nextfitJson(response, 'Não foi possível consultar as faturas do cadastro');
+  const payload = apiContent(result, 'A busca de faturas não foi concluída.');
+  const invoices = extractResponseItems(payload);
+  return invoices.map(item => {
+    if (!item || typeof item !== 'object') return item;
+    const normalized = { ...item };
+    normalized.MesAno = pickApiValue(item, 'MesAno', 'DataReferencia', 'DataVencimento', 'DataEmissao');
+    normalized.MediaClientes = pickApiValue(item,
+      'MediaClientes',
+      'MediaAlunosAtivos',
+      'MediaAlunos',
+      'MediaClientesAtivos',
+      'MediaClientesAtivosAtual',
+      'MediaAtivos',
+      'QuantidadeMediaClientesAtivos',
+      'AtivosMedia',
+      'QuantidadeAtivos',
+      'QtdClientesAtivos',
+      'QuantidadeClientesAtivos'
+    ) ?? deepFindValue(item, ['mediaclientes', 'mediaalunos', 'mediaativos', 'ativos']);
+    normalized.ValorTotal = pickApiValue(item,
+      'ValorTotal',
+      'Valor',
+      'ValorTotalFatura',
+      'ValorFatura',
+      'ValorMensalidade'
+    ) ?? deepFindValue(item, ['valortotal', 'valor']);
+    normalized.ValorProdutosAdicionais = pickApiValue(item,
+      'ValorProdutosAdicionais',
+      'ProdutosAdicionais',
+      'ValorAdicional',
+      'ValorProdutosAdicionaisFatura',
+      'ValorAdicionais'
+    ) ?? deepFindValue(item, ['valorprodutosadicionais', 'produtosadicionais']);
+    return normalized;
+  });
+}
+
+async function getNextfitBusinessIndicators(cadastroId) {
+  const id = Number(cadastroId);
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    throw new Error('Selecione um cadastro válido antes de consultar os indicadores.');
+  }
+  const supportState = await chrome.storage.session.get(NEXTFIT_SUPPORT_KEY);
+  if (Number(supportState[NEXTFIT_SUPPORT_KEY]?.cadastroId) !== id) {
+    throw new Error('Selecione novamente o cadastro antes de consultar os indicadores.');
+  }
+
+  const period = getPreviousMonthPeriod();
+  const endpoints = [
+    ['ticket', 'RecuperarIndicadorDadosTicketMedio', 'o ticket médio'],
+    ['atRisk', 'RecuperarIndicadorTotalizadorClientesEmRisco', 'os clientes em risco'],
+    ['churn', 'RecuperarIndicadorTotalizadorEvasao', 'o churn'],
+    ['lifetime', 'RecuperarIndicadorTotalizadorTempoMedioVidaEmMeses', 'o lifetime']
+  ];
+  const results = await Promise.all(endpoints.map(async ([key, endpoint, label]) => {
+    const query = new URLSearchParams({
+      CompetenciaStr: period.endString,
+      DataInicialStr: period.startString,
+      DataFinalStr: period.endString,
+      Comparar: 'false',
+      OrigemIndicador: '1',
+      IncluirAgregadores: 'false'
+    });
+    try {
+      const response = await requestSupportApi(
+        `${NEXTFIT_API}/IndicadorPessoa/${endpoint}?${query}`
+      );
+      const result = await nextfitJson(response, `Não foi possível consultar ${label}`);
+      return [key, { data: apiContent(result, `A consulta de ${label} não foi concluída.`) }];
+    } catch (error) {
+      return [key, { error: error.message || `Não foi possível consultar ${label}.` }];
+    }
+  }));
+  return {
+    period: period.label,
+    periodStart: period.start.toISOString(),
+    indicators: Object.fromEntries(results)
+  };
+}
+
+function findObservationModel(value, depth = 0) {
+  if (!value || typeof value !== 'object' || Array.isArray(value) || depth > 8) return null;
+  if (
+    Object.prototype.hasOwnProperty.call(value, 'Observacao') &&
+    Object.prototype.hasOwnProperty.call(value, 'CodigoCadastro') &&
+    Object.prototype.hasOwnProperty.call(value, 'Tipo')
+  ) {
+    return value;
+  }
+  for (const [key, nested] of Object.entries(value)) {
+    if (/cadastroobservacao/i.test(key) && nested && typeof nested === 'object' && !Array.isArray(nested)) {
+      return nested;
+    }
+    const match = findObservationModel(nested, depth + 1);
+    if (match) return match;
+  }
+  return null;
+}
+
+function buildNextfitObservationPayload(model, cadastroId, observation, type) {
+  if (!Object.prototype.hasOwnProperty.call(NEXTFIT_OBSERVATION_TYPES, type)) {
+    throw new Error('Selecione um tipo de observação válido.');
+  }
+  return {
+    ...model,
+    Observacao: observation,
+    CodigoCadastro: cadastroId,
+    Tipo: NEXTFIT_OBSERVATION_TYPES[type]
+  };
+}
+
+async function getNextfitNewObservationData(cadastroId) {
+  const id = Number(cadastroId);
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    throw new Error('Selecione um cadastro válido antes de criar uma observação.');
+  }
+  const state = await chrome.storage.session.get(NEXTFIT_SUPPORT_KEY);
+  const support = state[NEXTFIT_SUPPORT_KEY];
+  if (Number(support?.cadastroId) !== id) {
+    throw new Error('Selecione novamente o cadastro antes de criar uma observação.');
+  }
+  const response = await requestAgentApi(
+    `${NEXTFIT_ADM_API}/CadastroObservacao/RecuperarDadosNovoCadastroObservacao`
+  );
+  const result = await nextfitJson(response, 'Não foi possível carregar os dados para uma nova observação');
+  const data = apiContent(result, 'A busca dos dados para nova observação não foi concluída.');
+  const model = findObservationModel(data) || {
+    Observacao: '',
+    CodigoCadastro: id,
+    Tipo: NEXTFIT_OBSERVATION_TYPES.Perda
+  };
+  await chrome.storage.session.set({
+    [NEXTFIT_OBSERVATION_FORM_KEY]: {
+      cadastroId: id,
+      model
+    }
+  });
+  return { types: Object.keys(NEXTFIT_OBSERVATION_TYPES) };
+}
+
+async function createNextfitObservation(cadastroId, observation, type) {
+  const id = Number(cadastroId);
+  const text = typeof observation === 'string' ? observation.trim() : '';
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    throw new Error('Selecione um cadastro válido antes de criar uma observação.');
+  }
+  if (!text || text.length > 3000) {
+    throw new Error('A observação deve ter entre 1 e 3000 caracteres.');
+  }
+  const [supportState, formState] = await Promise.all([
+    chrome.storage.session.get(NEXTFIT_SUPPORT_KEY),
+    chrome.storage.session.get(NEXTFIT_OBSERVATION_FORM_KEY)
+  ]);
+  const support = supportState[NEXTFIT_SUPPORT_KEY];
+  const form = formState[NEXTFIT_OBSERVATION_FORM_KEY];
+  if (Number(support?.cadastroId) !== id || Number(form?.cadastroId) !== id) {
+    throw new Error('Carregue novamente o tipo da observação para o cadastro selecionado.');
+  }
+
+  const body = buildNextfitObservationPayload(form.model, id, text, type);
+  const response = await requestAgentApi(`${NEXTFIT_ADM_API}/CadastroObservacao`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const result = await nextfitJson(response, 'Não foi possível registrar a observação');
+  apiContent(result, 'A Next Fit não confirmou o registro da observação.');
+  return { created: true };
+}
+
+async function listNextfitPriceTable(cadastroId) {
+  const id = Number(cadastroId);
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    throw new Error('Selecione um cadastro válido antes de consultar a tabela de preços.');
+  }
+  const supportState = await chrome.storage.session.get(NEXTFIT_SUPPORT_KEY);
+  if (Number(supportState[NEXTFIT_SUPPORT_KEY]?.cadastroId) !== id) {
+    throw new Error('Selecione novamente o cadastro antes de consultar a tabela de preços.');
+  }
+
+  const query = new URLSearchParams({
+    filter: JSON.stringify([
+      { property: 'CodigoCadastro', operator: 'equal', value: String(id), and: false },
+      { property: 'Inativo', operator: 'equal', value: false, and: true }
+    ]),
+    includes: JSON.stringify(['TabelaPrecoPlano', 'TabelaPrecoPlano.Plano']),
+    page: '1'
+  });
+  const response = await requestAgentApi(`${NEXTFIT_ADM_API}/CadastroTabelaPreco?${query}`);
+  const result = await nextfitJson(response, 'Não foi possível consultar a tabela de preços do cadastro');
+  const payload = apiContent(result, 'A busca da tabela de preços não foi concluída.');
+  const numericValue = value =>
+    typeof value === 'number' || (typeof value === 'string' && value.trim())
+      ? Number(value)
+      : Number.NaN;
+  const rows = extractResponseItems(payload)
+    .filter(item => item && typeof item === 'object' && !Array.isArray(item))
+    .map(item => ({
+      Inicio: numericValue(item.Inicio),
+      Fim: numericValue(item.Fim),
+      Valor: numericValue(pickApiValue(item, 'TabelaPrecoPlano.Valor', 'Valor'))
+    }))
+    .filter(item =>
+      Number.isFinite(item.Inicio) &&
+      Number.isFinite(item.Fim) &&
+      item.Inicio <= item.Fim &&
+      Number.isFinite(item.Valor) &&
+      item.Valor >= 0
+    );
+  if (!rows.length) {
+    throw new Error('A tabela de preços não retornou faixas e valores válidos.');
+  }
+  return rows;
+}
+
+async function searchNextfitBases(value) {
+  const input = typeof value === 'string' ? value.trim() : '';
+  const phone = input.replace(/\D/g, '');
+  const normalized = phone.length >= 10 && phone.length <= 13 ? phone : input;
+  const isPhone = /^\d{10,13}$/.test(phone);
+  const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input);
+  if (!isPhone && !isEmail) {
+    throw new Error(isPhone === false && isEmail === false
+      ? 'Informe um telefone com DDD ou um e-mail de cliente válido.'
+      : 'Informe um telefone com DDD ou um e-mail de cliente válido.');
+  }
+  const searchTerms = isPhone ? getNextfitPhoneSearchTerms(phone) : [normalized];
+  const results = await Promise.all(searchTerms.map(async searchTerm => {
+    const query = new URLSearchParams({
+      Ativacao: 'null',
+      DataCancelamentoFinal: 'null',
+      DataCancelamentoInicial: 'null',
+      DataInicioFinal: 'null',
+      DataInicioInicial: 'null',
+      DataUltimoAcessoFinal: 'null',
+      DataUltimoAcessoInicial: 'null',
+      EmAtencao: 'null',
+      PesquisaGeral: searchTerm,
+      RealizouTreinamento: 'null',
+      Status: '[1,3,2,5,6]',
+      Trial: 'null',
+      Vip: 'null',
+      page: '1',
+      sort: JSON.stringify([
+        { property: 'DataCriacao', direction: 'desc' },
+        { property: 'Id', direction: 'desc' }
+      ])
+    });
+    const response = await requestAgentApi(`${NEXTFIT_ADM_API}/Cadastro/ListarView?${query}`);
+    const result = await nextfitJson(response, 'Não foi possível buscar os cadastros');
+    const bases = apiContent(result, 'A busca de cadastros não foi concluída.');
+    if (!Array.isArray(bases)) throw new Error('A Next Fit retornou uma lista de cadastros inválida.');
+    return bases.map(normalizeNextfitBase);
+  }));
+  const uniqueBases = new Map();
+  for (const base of results.flat()) {
+    const id = base?.Id ?? base?.CodigoCadastro;
+    uniqueBases.set(id == null ? JSON.stringify(base) : String(id), base);
+  }
+  return [...uniqueBases.values()];
+}
+
+function getNextfitPhoneSearchTerms(phone) {
+  const hasCountryCode = phone.startsWith('55') && (phone.length === 12 || phone.length === 13);
+  const nationalPhone = hasCountryCode ? phone.slice(2) : phone;
+  let alternate;
+  if (nationalPhone.length === 10) {
+    alternate = `${nationalPhone.slice(0, 2)}9${nationalPhone.slice(2)}`;
+  } else if (nationalPhone.length === 11 && nationalPhone[2] === '9') {
+    alternate = `${nationalPhone.slice(0, 2)}${nationalPhone.slice(3)}`;
+  }
+  if (!alternate) return [phone];
+  return hasCountryCode ? [phone, `55${alternate}`] : [phone, alternate];
 }
 
 async function getNextfitUsers(cadastroId) {
@@ -455,7 +834,7 @@ function selectSupportMaster(users) {
     null;
 }
 
-async function startNextfitSupportSession(cadastro, conversationId) {
+async function createNextfitSupportSession(cadastro, conversationId) {
   const cadastroId = Number(cadastro?.Id);
   const unitCode = Number(cadastro?.CodigoUnidade);
   if (!Number.isSafeInteger(cadastroId) || cadastroId <= 0 ||
@@ -463,7 +842,7 @@ async function startNextfitSupportSession(cadastro, conversationId) {
     throw new Error('O cadastro retornou um código inválido.');
   }
 
-  await chrome.storage.session.remove(NEXTFIT_SUPPORT_KEY);
+  await chrome.storage.session.remove([NEXTFIT_SUPPORT_KEY, NEXTFIT_OBSERVATION_FORM_KEY]);
   const users = await getNextfitUsers(cadastroId);
   const master = selectSupportMaster(users);
   if (!master?.Id) throw new Error('Não há usuário ativo na base para registrar o acesso de suporte.');
@@ -475,10 +854,9 @@ async function startNextfitSupportSession(cadastro, conversationId) {
     conversationId: typeof conversationId === 'string' ? conversationId.slice(0, 120) : ''
   };
   await renewSupportAccess(support);
-  const equipment = await listNextfitEquipment();
   return {
-    equipment,
     users,
+    support,
     base: {
       Id: cadastroId,
       CodigoUnidade: unitCode,
@@ -487,8 +865,84 @@ async function startNextfitSupportSession(cadastro, conversationId) {
   };
 }
 
+async function startNextfitSupportSession(cadastro, conversationId) {
+  const session = await createNextfitSupportSession(cadastro, conversationId);
+  const equipment = await listNextfitEquipment();
+  return {
+    users: session.users,
+    base: session.base,
+    equipment
+  };
+}
+
 async function selectNextfitBase(cadastro, conversationId) {
-  return startNextfitSupportSession(cadastro, conversationId);
+  const session = await startNextfitSupportSession(cadastro, conversationId);
+  const selectedBase = session.base || { Id: cadastro?.Id, CodigoUnidade: cadastro?.CodigoUnidade, Nome: cadastro?.Nome || cadastro?.RazaoSocial || cadastro?.NomeFantasia };
+  const normalizedBase = normalizeNextfitBase({
+    ...selectedBase,
+    ...(cadastro || {})
+  });
+  try {
+    const invoices = await listNextfitInvoices(normalizedBase.Id);
+    normalizedBase.FaturasRecentes = invoices;
+    normalizedBase.FaturasErro = '';
+  } catch (error) {
+    normalizedBase.FaturasRecentes = [];
+    normalizedBase.FaturasErro = error.message || 'Não foi possível carregar as faturas do cadastro.';
+  }
+  return {
+    ...session,
+    base: normalizedBase
+  };
+}
+
+async function selectNextfitDashboardBase(cadastro, conversationId) {
+  const cadastroId = Number(cadastro?.Id);
+  if (!Number.isSafeInteger(cadastroId) || cadastroId <= 0) {
+    throw new Error('O cadastro selecionado não tem um código válido.');
+  }
+  const session = await createNextfitSupportSession(cadastro, conversationId);
+  const userId = Number(session.support.masterUserId);
+  const environmentQuery = new URLSearchParams({ CodigoUsuario: String(userId) });
+  const environmentResponse = await requestSupportApi(
+    `${NEXTFIT_API}/Usuario/RecuperarAmbienteUsuario?${environmentQuery}`
+  );
+  const environmentResult = await nextfitJson(
+    environmentResponse,
+    'Não foi possível carregar os dados do cadastro'
+  );
+  const environment = apiContent(
+    environmentResult,
+    'A Next Fit não retornou os dados do cadastro.'
+  );
+  if (!environment || typeof environment !== 'object' || Array.isArray(environment)) {
+    throw new Error('A Next Fit retornou os dados do cadastro em um formato inválido.');
+  }
+  const normalizedBase = normalizeNextfitBase({
+    ...cadastro,
+    ...environment,
+    Id: environment.CodigoCadastro ?? cadastroId,
+    CodigoUnidade: environment.CodigoUnidade ?? cadastro.CodigoUnidade,
+    Nome: environment.NomeFantasiaUnidade ?? cadastro.Nome ?? cadastro.RazaoSocial,
+    DataCriacao: environment.DataProvisionamento ?? cadastro.DataCriacao,
+    StatusAtivacao: environment.Ativacao ?? environment.StatusAtivacao,
+    EmAtencao: environment.Atencao ?? environment.EmAtencao
+  });
+  try {
+    normalizedBase.FaturasRecentes = await listNextfitInvoices(cadastroId);
+    normalizedBase.FaturasErro = '';
+  } catch (error) {
+    normalizedBase.FaturasRecentes = [];
+    normalizedBase.FaturasErro = error.message || 'Não foi possível carregar as faturas do cadastro.';
+  }
+  try {
+    normalizedBase.TabelaPrecoFit = await listNextfitPriceTable(cadastroId);
+    normalizedBase.TabelaPrecoErro = '';
+  } catch (error) {
+    normalizedBase.TabelaPrecoFit = [];
+    normalizedBase.TabelaPrecoErro = error.message || 'Não foi possível carregar a tabela de preços.';
+  }
+  return { base: normalizedBase };
 }
 
 async function getNextfitSupportUrl() {
@@ -944,12 +1398,26 @@ async function handleNextfitMessage(message, sender) {
       return { authenticated: true };
     }
     case 'help-curupaco:nextfit:logout':
-      await chrome.storage.session.remove([NEXTFIT_SESSION_KEY, NEXTFIT_SUPPORT_KEY]);
+      await chrome.storage.session.remove([
+        NEXTFIT_SESSION_KEY,
+        NEXTFIT_SUPPORT_KEY,
+        NEXTFIT_OBSERVATION_FORM_KEY
+      ]);
       return { loggedOut: true };
     case 'help-curupaco:nextfit:base:search':
-      return searchNextfitBases(message.email);
+      return searchNextfitBases(message.phone || message.email);
     case 'help-curupaco:nextfit:base:select':
       return selectNextfitBase(message.cadastro, message.conversationId);
+    case 'help-curupaco:nextfit:dashboard:base:select':
+      return selectNextfitDashboardBase(message.cadastro, message.conversationId);
+    case 'help-curupaco:nextfit:invoice:list':
+      return listNextfitInvoices(message.cadastroId);
+    case 'help-curupaco:nextfit:business-indicators:list':
+      return getNextfitBusinessIndicators(message.cadastroId);
+    case 'help-curupaco:nextfit:observation:form':
+      return getNextfitNewObservationData(message.cadastroId);
+    case 'help-curupaco:nextfit:observation:create':
+      return createNextfitObservation(message.cadastroId, message.observation, message.observationType);
     case 'help-curupaco:nextfit:equipment:list':
       return listNextfitEquipment();
     case 'help-curupaco:nextfit:user:list':

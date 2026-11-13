@@ -1,0 +1,17 @@
+Dentro do sistema:
+Ultimo mês fechado
+LT - Life time
+Churn
+Ticket médio
+Clientes em risco
+
+Painel ADM:
+Mensalidade  
+FIT 
+Modelo de operação
+Se possui algum adon
+Em Risco
+Média de ativos 
+
+Criar observação:
+Pegar o padrão com o Feijo

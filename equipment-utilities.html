@@ -36,9 +36,19 @@
             <p class="eyebrow">BASE SELECIONADA</p>
             <h2 id="selected-name"></h2>
             <p id="selected-meta" class="muted"></p>
+            <p id="selected-profile" class="muted"></p>
           </div>
           <button id="change-client" class="secondary" type="button">Trocar base</button>
         </div>
+        <section class="payments-panel" aria-labelledby="payments-heading">
+          <div class="section-heading">
+            <h3 id="payments-heading">Últimas mensalidades</h3>
+            <button id="reload-invoices" class="secondary" type="button">Atualizar</button>
+          </div>
+          <p class="muted">12 faturas mais recentes por referência; ativos e Fit correspondem à média do mês. O valor exibido é o total da fatura.</p>
+          <p id="invoice-status" class="status" role="status" hidden></p>
+          <div id="invoice-list" class="invoice-list" aria-live="polite"></div>
+        </section>
         <nav class="utility-actions" aria-label="Ações da base">
           <button id="open-user" class="secondary" type="button">Usuários</button>
           <button id="open-equipment" class="secondary" type="button">Equipamentos</button>
@@ -101,10 +111,8 @@
         <form id="equipment-edit-form" class="form-grid editor-form" hidden>
           <h3>Editar equipamento</h3>
           <label>Descrição<input id="edit-equipment-description" maxlength="200" required></label>
-          <label>Configuração do modelo (JSON)
-            <textarea id="edit-equipment-configuration" rows="9" spellcheck="false" required></textarea>
-          </label>
-          <p class="muted">As senhas de acesso físico ficam visíveis nesta configuração. Tokens e segredos continuam ocultos.</p>
+          <div id="edit-equipment-configuration" class="form-grid equipment-edit-fields"></div>
+          <p class="muted">Campos de senha ficam ocultos. Tokens e segredos não são editados e permanecem preservados.</p>
           <div class="actions">
             <button id="cancel-equipment-edit" class="secondary" type="button">Cancelar</button>
             <button class="primary" type="submit">Revisar e salvar</button>

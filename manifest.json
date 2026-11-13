@@ -1,51 +1,36 @@
 {
   "manifest_version": 3,
-  "name": "Help Curupaco",
-  "version": "2.7",
-  "description": "Suporte a Equipamentos - Gerador de Repasse com memória por URL",
+  "name": "Help Gojo",
+  "version": "3.0",
+  "description": "Consulta de clientes, faturas e indicadores Next Fit no WhatsApp Web",
   "icons": {
     "16": "icon16.png",
     "48": "icon48.png",
     "128": "icon128.png"
   },
   "action": {
+    "default_popup": "gojo-dashboard.html",
     "default_icon": {
       "16": "icon16.png",
       "48": "icon48.png",
       "128": "icon128.png"
     }
   },
-  "options_ui": {
-    "page": "settings.html",
-    "open_in_tab": true
-  },
   "background": {
     "service_worker": "background.js"
   },
-  "permissions": [
-    "storage",
-    "clipboardWrite",
-    "windows"
-  ],
-  "host_permissions": [
-    "https://sistemanextfit.myfreshworks.com/*"
-  ],
+  "permissions": ["storage", "clipboardWrite"],
   "optional_host_permissions": [
-    "https://*.supabase.co/*",
     "https://apiadm.nextfit.com.br/*",
     "https://api.nextfit.com.br/*"
   ],
   "content_scripts": [
     {
       "matches": [
-        "https://sistemanextfit.myfreshworks.com/*"
+        "https://web.whatsapp.com/*"
       ],
       "js": [
-        "config-defaults.js",
-        "freshworks-content.js"
-      ],
-      "css": [
-        "freshworks-content.css"
+        "whatsapp-content.js"
       ],
       "run_at": "document_idle"
     }
@@ -53,16 +38,13 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "popup.html",
-        "poptup.js",
-        "config-defaults.js",
         "icon.png",
-        "equipment-utilities.html",
-        "equipment-utilities.css",
-        "equipment-utilities.js"
+        "gojo-dashboard.html",
+        "gojo-dashboard.css",
+        "gojo-dashboard.js"
       ],
       "matches": [
-        "https://sistemanextfit.myfreshworks.com/*"
+        "https://web.whatsapp.com/*"
       ]
     }
   ]

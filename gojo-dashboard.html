@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Help Gojo</title>
+  <link rel="stylesheet" href="gojo-dashboard.css">
+</head>
+<body>
+  <main class="app">
+    <header class="app-header">
+      <img class="brand-mark" src="icon.png" alt="">
+      <div class="brand-copy">
+        <p class="eyebrow">HELP GOJO</p>
+        <h1 id="panel-title">Visão do cliente</h1>
+      </div>
+      <button id="close" class="icon-button" type="button" aria-label="Fechar painel">×</button>
+    </header>
+    <nav class="view-tabs" role="tablist" aria-label="Seções do painel">
+      <button id="customer-tab" class="view-tab" type="button" role="tab"
+        aria-controls="customer-panel" aria-selected="true">Visão do cliente</button>
+      <button id="agenda-tab" class="view-tab" type="button" role="tab"
+        aria-controls="agenda-panel" aria-selected="false" tabindex="-1">Agenda</button>
+    </nav>
+    <section id="customer-panel" role="tabpanel" aria-labelledby="customer-tab">
+    <div id="status" class="status" role="status" aria-live="polite" hidden></div>
+    <section id="login-view" class="card" hidden>
+      <h2>Conectar à Next Fit</h2>
+      <p class="muted">Use seu acesso individual. As credenciais ficam salvas neste perfil do navegador.</p>
+      <form id="login-form" class="form-grid">
+        <label>E-mail do agente<input name="email" type="email" autocomplete="username" required></label>
+        <label>Senha<input name="password" type="password" autocomplete="current-password" required></label>
+        <label>Código de acesso<input name="code" type="password" autocomplete="off" required></label>
+        <button class="primary" type="submit">Conectar</button>
+      </form>
+    </section>
+    <section id="workspace-view" hidden>
+      <section class="card">
+        <form id="search-form" class="search-form">
+          <label for="client-phone">Telefone do cliente</label>
+          <div class="search-row">
+            <input id="client-phone" type="tel" inputmode="numeric" autocomplete="off"
+              placeholder="31989823532" pattern="[0-9]{10,13}" required>
+            <button class="primary" type="submit">Buscar</button>
+          </div>
+          <p class="muted">DDD + número, somente dígitos. O telefone da conversa do WhatsApp é preenchido quando estiver visível.</p>
+        </form>
+        <div id="matches" class="matches"></div>
+      </section>
+      <section id="selected-view" class="card" hidden>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">CADASTRO SELECIONADO</p>
+            <h2 id="selected-name"></h2>
+            <p id="selected-meta" class="muted"></p>
+          </div>
+          <button id="change-client" class="secondary" type="button">Trocar</button>
+        </div>
+        <section class="customer-summary" aria-labelledby="summary-heading">
+          <div class="section-heading">
+            <div>
+              <h3 id="summary-heading">Resumo do cliente</h3>
+              <p id="summary-period" class="muted"></p>
+            </div>
+          </div>
+          <div id="customer-metrics" class="customer-metrics" aria-live="polite"></div>
+          <p id="price-status" class="status error" role="status" hidden></p>
+          <p class="summary-note muted">Mensalidade mostra o valor padrão da tabela para o Fit calculado; add-ons são exibidos quando disponíveis na fatura mais recente.</p>
+        </section>
+        <section class="business-indicators-panel" aria-labelledby="indicators-heading">
+          <div class="section-heading">
+            <div>
+              <h3 id="indicators-heading">Indicadores do mês anterior</h3>
+              <p id="indicators-period" class="muted">Carregando período…</p>
+            </div>
+            <button id="reload-indicators" class="secondary" type="button">Atualizar</button>
+          </div>
+          <p id="indicators-status" class="status" role="status" aria-live="polite" hidden></p>
+          <div class="business-indicators" aria-live="polite">
+            <div class="business-indicator">
+              <span class="customer-metric-label">Ticket médio</span>
+              <strong id="indicator-ticket" class="customer-metric-value">Carregando…</strong>
+              <small id="indicator-ticket-detail" class="indicator-detail"></small>
+            </div>
+            <div class="business-indicator">
+              <span class="customer-metric-label">Clientes em risco</span>
+              <strong id="indicator-at-risk" class="customer-metric-value">Carregando…</strong>
+            </div>
+            <div class="business-indicator">
+              <span class="customer-metric-label">Churn</span>
+              <strong id="indicator-churn" class="customer-metric-value">Carregando…</strong>
+              <small id="indicator-churn-detail" class="indicator-detail"></small>
+            </div>
+            <div class="business-indicator">
+              <span class="customer-metric-label">Lifetime (LT)</span>
+              <strong id="indicator-lifetime" class="customer-metric-value">Carregando…</strong>
+              <small id="indicator-lifetime-detail" class="indicator-detail"></small>
+            </div>
+          </div>
+        </section>
+        <div class="system-access">
+          <button id="access-system" class="primary" type="button">Acessar sistema</button>
+        </div>
+        <section class="payments-panel" aria-labelledby="payments-heading">
+          <div class="section-heading">
+            <div>
+              <h3 id="payments-heading">Histórico de mensalidades</h3>
+              <p class="muted">Detalhes das últimas 3 faturas.</p>
+            </div>
+            <button id="reload-invoices" class="secondary" type="button">Atualizar</button>
+          </div>
+          <p id="invoice-status" class="status" role="status" hidden></p>
+          <div id="invoice-list" class="invoice-list" aria-live="polite"></div>
+        </section>
+        <section class="observation-panel" aria-labelledby="observation-heading">
+          <div class="section-heading">
+            <div>
+              <h3 id="observation-heading">Nova observação</h3>
+              <p class="muted">Registre uma observação no cadastro da Next Fit.</p>
+            </div>
+            <button id="prepare-observation" class="secondary" type="button">Criar observação</button>
+          </div>
+          <p id="observation-status" class="status" role="status" aria-live="polite" hidden></p>
+          <form id="observation-form" class="form-grid" hidden>
+            <label for="observation-type">Tipo</label>
+            <select id="observation-type" disabled required>
+              <option value="">Carregando…</option>
+            </select>
+            <label for="observation-text">Texto</label>
+            <textarea id="observation-text" rows="5" maxlength="3000" required>📈 EXPANSÃO CS - @expansaosemsucesso
+
+Motivo:</textarea>
+            <button class="primary" type="submit">Registrar observação</button>
+          </form>
+      </section>
+    </section>
+    </section>
+    </section>
+    <section id="agenda-panel" class="card agenda-panel" role="tabpanel"
+      aria-labelledby="agenda-tab" hidden>
+      <div class="section-heading">
+        <div>
+          <h2>Agenda do dia</h2>
+          <p id="agenda-description" class="muted">Conecte sua agenda compartilhada do Google Calendar.</p>
+        </div>
+        <div class="agenda-actions">
+          <a id="open-google-calendar" class="secondary button-link" target="_blank"
+            rel="noopener noreferrer" hidden>Abrir no Google Calendar</a>
+          <button id="change-google-calendar" class="secondary" type="button" hidden>Trocar agenda</button>
+          <button id="disconnect-google-calendar" class="secondary" type="button" hidden>Sair da agenda</button>
+        </div>
+      </div>
+      <form id="calendar-link-form" class="calendar-link-form">
+        <label for="calendar-link">Link compartilhado do Google Calendar
+          <input id="calendar-link" name="calendar-link" type="url" autocomplete="url"
+            placeholder="https://calendar.google.com/calendar/u/0?cid=..." required>
+        </label>
+        <p class="muted agenda-note">Use um link que contenha <code>cid=</code> ou um link de incorporação com <code>src=</code>. A agenda privada precisa estar compartilhada com a conta Google usada neste navegador.</p>
+        <div class="calendar-link-actions">
+          <button id="save-calendar-link" class="primary" type="submit">Conectar agenda</button>
+          <button id="cancel-calendar-change" class="secondary" type="button" hidden>Cancelar</button>
+        </div>
+      </form>
+      <p id="agenda-status" class="status error" role="status" hidden></p>
+      <iframe id="google-calendar" class="google-calendar" title="Agenda diária do Google Calendar"
+        loading="lazy" referrerpolicy="no-referrer" hidden></iframe>
+    </section>
+  </main>
+  <script src="gojo-dashboard.js"></script>
+</body>
+</html>
